@@ -1,0 +1,62 @@
+/*faqs start*/
+#faq-main{
+    padding: 15px 25px 15px 25px;
+    height: fit-content;
+    min-height: 25vh;
+}
+
+.search{
+    margin: 20px;
+}
+
+.search form{
+    width: 460px;
+    height: 45px;
+    /* border: 1px solid antiquewhite; */
+    border-radius: 15px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.403);
+    margin-bottom: 20px;
+}
+
+.search form input{
+    border: none;
+    outline: none;
+    box-shadow: none;
+    width: 90%;
+    font-size: 20px;
+    font-weight: 400;
+    background-color: rgba(255, 255, 255, 0);
+    padding: 8px 0px 8px 10px;
+}
+
+.search form i{
+    padding-left: 10px;
+}
+
+.search form input::placeholder{
+    font-style: italic;
+}
+
+.Question h3{
+    padding-top: 30px;
+    padding-bottom: 5px;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.Question p{
+    font-size: 20px;
+    letter-spacing: 1px;
+    line-height: 1.5;
+}
+
+.Question a{
+    font-size: 20px;
+}
+
+.Question a:hover{
+    color: rgb(3, 2, 31);
+}

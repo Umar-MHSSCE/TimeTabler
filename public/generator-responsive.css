@@ -1,0 +1,759 @@
+/* ============================================================
+   generator-responsive.css — Mobile & tablet fixes for
+   the Timetabler Generator / Customizer page (index.html)
+
+   Add this as the LAST <link> in index.html's <head>:
+   <link rel="stylesheet" href="generator-responsive.css">
+   ============================================================ */
+
+/* ─── 1. BODY + OUTER CONTAINER ──────────────────────────────
+   FIX: body had margin:20px + padding:25px from generator.css.
+   On mobile that wastes ~90px of screen width on both sides.
+   Remove it completely — .page fills edge to edge.
+   Background stays fixed so it always covers the viewport.
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-attachment: fixed !important;
+        background-size: cover !important;
+        background-repeat: no-repeat !important;
+        background-position: center center !important;
+    }
+
+    /* .page is the outermost glass card — let it fill the screen */
+    .page {
+        border-radius: 0 !important;   /* no rounded corners when edge-to-edge */
+        padding: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+}
+
+/* ─── 2. HEADER / NAV ────────────────────────────────────────
+   FIX: h1 + toggle switch were in one row — they overlap.
+   Stack them vertically on mobile.
+   FIX SWITCH: "Customizer" was getting cut off because the
+   switch width (247px) was too wide for the slider math.
+   Recalculate: total=220px, slider=108px, gap=4px.
+   translateX = 220 - 108 - 4 - 4 = 104px
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    header {
+        padding: 10px 12px;
+    }
+
+    header nav {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 14px;
+    }
+
+    header nav h1 {
+        font-size: 24px !important;
+        text-align: center;
+    }
+
+    header nav .container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* Switch pill: 260px total, each half = 130px */
+    .switch {
+        width: 260px !important;
+        height: 50px !important;
+        font-size: 1rem !important;
+        padding: 0 !important;
+        position: relative !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        border-radius: 50px !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Slider: 126px wide, 4px inset on all sides */
+    .slider {
+        width: 126px !important;
+        height: 42px !important;
+        top: 4px !important;
+        left: 4px !important;
+        bottom: auto !important;
+        right: auto !important;
+        border-radius: 40px !important;
+        position: absolute !important;
+    }
+
+    /* Checked: slide to right — 260 - 126 - 4(left) - 4(right) = 126px */
+    input:checked ~ .slider {
+        transform: translateX(126px) !important;
+    }
+
+    .switch-labels {
+        gap: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        justify-content: space-around !important;
+        display: flex !important;
+        position: relative !important;
+        z-index: 1 !important;
+        pointer-events: none !important;
+    }
+
+    .switch-labels span {
+        width: 130px !important;
+        text-align: center !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+    }
+}
+
+/* ─── 3. INPUT FORM ──────────────────────────────────────────
+   margin: 20px 150px → kills content width on mobile.
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .inputform {
+        margin: 10px 0 !important;
+        padding: 8px !important;
+        background-color: transparent !important;
+    }
+
+    .inputform h1 {
+        font-size: 22px !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    .inputform {
+        margin: 20px 40px !important;
+    }
+}
+
+/* ─── 4. FORM SECTIONS + INPUTS ──────────────────────────────*/
+@media (max-width: 768px) {
+    .form-section {
+        width: 100% !important;
+        box-sizing: border-box;
+        padding: 12px !important;
+    }
+
+    .form-section h2 { font-size: 18px !important; }
+    .form-section h3 { font-size: 15px !important; }
+
+    #timetableForm label {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px;
+        margin-bottom: 12px !important;
+        font-size: 14px;
+    }
+
+    #timetableForm input[type="text"],
+    #timetableForm input[type="time"],
+    #timetableForm input[type="number"],
+    #timetableForm input[type="file"] {
+        width: 100% !important;
+        box-sizing: border-box;
+        font-size: 16px !important;
+        padding: 8px !important;
+    }
+
+    #timetableForm label:has(input[type="checkbox"]) {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px;
+    }
+}
+
+/* ─── 5. BREAK INPUTS ────────────────────────────────────────*/
+@media (max-width: 768px) {
+    .breakInput,
+    .saturdayBreakInput {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px;
+        padding: 8px !important;
+    }
+}
+
+/* ─── 6. FORM BUTTONS ────────────────────────────────────────*/
+@media (max-width: 768px) {
+    #addBreak,
+    #addSaturdayBreak {
+        width: 100%;
+        padding: 10px !important;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    #generateButton {
+        width: 100% !important;
+        font-size: 20px !important;
+        padding: 12px !important;
+        margin-top: 10px;
+    }
+}
+
+/* ─── 7. TIMETABLE OUTPUT ────────────────────────────────────
+   FIX: Tables were too small (11px font, cramped cells).
+   The table should scroll horizontally at a COMFORTABLE reading
+   size — not squashed to fit. Use 14px font, proper padding,
+   and let the table be as wide as it needs to be.
+   The scroll wrapper handles the overflow cleanly.
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .output {
+        padding: 10px !important;
+        border-radius: 15px;
+        background-color: white;
+    }
+
+    /* Scroll wrappers */
+    #timetableOutput,
+    #facultyTimetableOutput,
+    #resourceTimetableOutput,
+    #customizerOutput {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    /* Department / class headings inside output */
+    #timetableOutput h1,
+    #facultyTimetableOutput h1,
+    #resourceTimetableOutput h1 {
+        font-size: 22px !important;
+        text-align: center;
+    }
+
+    #timetableOutput h2,
+    #facultyTimetableOutput h2,
+    #resourceTimetableOutput h2 {
+        font-size: 17px !important;
+    }
+
+    /* Tables: comfortable reading size, scroll horizontally */
+    #timetableOutput table,
+    #facultyTimetableOutput table,
+    #resourceTimetableOutput table,
+    #customizerOutput table {
+        min-width: 650px;           /* never squeeze below this */
+        font-size: 14px !important; /* readable — was 11px/12px */
+        width: auto !important;     /* natural width, don't force 100% */
+    }
+
+    /* Cells: comfortable padding, NO line-wrapping.
+       FIX (shrink + word-wrap bug): "white-space: normal" + a small
+       80px min-width let the browser's auto table-layout squeeze each
+       day column down toward that 80px floor and then wrap every line
+       (Subject / Venue / Faculty) into tiny broken fragments — that's
+       the "chota chota" shrunk look with words jumping to the next
+       line. Switching to nowrap forces each column to size itself to
+       its REAL content width instead; the outer wrapper (#7 above)
+       already scrolls horizontally, so nothing gets cut off. This
+       matches how #customizerOutput cells are already handled below. */
+    #timetableOutput table th,
+    #timetableOutput table td,
+    #facultyTimetableOutput table th,
+    #facultyTimetableOutput table td,
+    #resourceTimetableOutput table th,
+    #resourceTimetableOutput table td {
+        padding: 8px 12px !important;   /* was 5px — more breathing room */
+        font-size: 14px !important;
+        white-space: nowrap;            /* keep each line on one line */
+        min-width: 110px;               /* comfortable floor for empty/short cells */
+    }
+
+    /* Customizer cells need more room — subject + faculty + venue stacked */
+    #customizerOutput table th,
+    #customizerOutput table td {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        white-space: nowrap;            /* prevent awkward mid-word wraps */
+        min-width: 120px;               /* enough space for typical cell content */
+    }
+
+    /* Customizer time column */
+    #customizerOutput table th:first-child,
+    #customizerOutput table td:first-child {
+        min-width: 100px !important;
+        white-space: nowrap !important;
+    }
+
+    /* lecture-content lines (subject / faculty / venue) — each on its own line */
+    #customizerOutput .lecture-content {
+        line-height: 1.5;
+        white-space: nowrap;
+    }
+
+    /* Time column: slightly narrower, still readable */
+    #timetableOutput table th:first-child,
+    #timetableOutput table td:first-child,
+    #facultyTimetableOutput table th:first-child,
+    #facultyTimetableOutput table td:first-child,
+    #resourceTimetableOutput table th:first-child,
+    #resourceTimetableOutput table td:first-child {
+        min-width: 90px !important;
+        width: 90px !important;
+        font-size: 13px !important;
+        white-space: nowrap;            /* time range "10:00 - 11:00" stays on one line */
+    }
+}
+
+/* ─── 8. DOWNLOAD BUTTONS ────────────────────────────────────*/
+@media (max-width: 768px) {
+    #download-options {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        margin-top: 14px !important;
+    }
+
+    #download-options button {
+        width: 100% !important;
+        padding: 8px 4px !important;
+        font-size: 11px !important;
+        text-align: center;
+        margin: 0 !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        line-height: 1.3 !important;
+        min-height: 44px;
+    }
+
+    #editGeneratedTimetable {
+        grid-column: 1 / -1 !important;
+        font-size: 14px !important;
+        padding: 12px !important;
+    }
+
+    #displayFacultyTimetable,
+    #displayResourceTimetable {
+        width: 100% !important;
+        padding: 10px !important;
+        font-size: 13px !important;
+        margin-bottom: 6px !important;
+        display: block !important;
+    }
+}
+
+/* ─── 9. CUSTOMIZER — UPLOAD CONTAINER ───────────────────────*/
+@media (max-width: 768px) {
+    .upload-container {
+        width: 90% !important;
+        min-height: 180px !important;
+        height: auto !important;
+        padding: 20px !important;
+        box-sizing: border-box;
+    }
+
+    .upload-container p {
+        font-size: 14px !important;
+        text-align: center;
+    }
+
+    .btn {
+        padding: 10px 20px !important;
+        font-size: 14px !important;
+    }
+}
+
+/* ─── 10. CUSTOMIZER — EDITOR CONTROLS ───────────────────────*/
+@media (max-width: 768px) {
+    #editOptions {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px;
+        margin: 10px 0 !important;
+    }
+
+    #editOptions label {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+    }
+
+    #actionButtons {
+        display: flex !important;
+        gap: 10px;
+        margin: 10px 0 !important;
+    }
+
+    #actionButtons button,
+    #edit-btn {
+        flex: 1;
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    .editor > button[onclick] {
+        width: 100% !important;
+        margin: 6px 0 !important;
+        padding: 10px !important;
+        font-size: 13px !important;
+        display: block !important;
+    }
+}
+
+/* ─── 11. TABLET ─────────────────────────────────────────────*/
+@media (min-width: 769px) and (max-width: 1100px) {
+    body {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    header nav {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    #download-options {
+        display: flex;
+        flex-wrap: wrap !important;
+        gap: 8px;
+    }
+
+    #download-options button {
+        flex: 1 1 calc(33% - 8px);
+        min-width: 130px;
+    }
+
+    .upload-container {
+        width: 90% !important;
+    }
+}
+
+/* ─── 12. GLOBAL: prevent horizontal overflow ────────────────*/
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Tables must not be constrained by the global max-width rule */
+table, th, td {
+    max-width: none;
+}
+/* ─── 13. TOUCH DRAG-DROP ────────────────────────────────────
+   DO NOT set touch-action: none here in CSS.
+   If you block touch-action globally on every cell, the browser
+   freezes on ANY touch — even a quick scroll — waiting to see
+   if it becomes a long-press drag. Terrible UX.
+
+   Instead, touch-action is applied DYNAMICALLY by JS only after
+   the long-press threshold fires (see the touchstart handler in
+   script.js). Until then, native scroll runs freely.
+
+   -webkit-touch-callout and user-select are safe to keep here
+   because they only affect text selection / context menus —
+   they don't interfere with scroll at all.
+   ─────────────────────────────────────────────────────────── */
+/* Save button — disabled until a change is made */
+.action-save-disabled,
+.action-save:disabled {
+  background: #b0b8cc !important;
+  color: #fff !important;
+  cursor: not-allowed !important;
+  opacity: 0.65;
+  transform: none !important;
+}
+.action-save-disabled:hover,
+.action-save:disabled:hover {
+  background: #b0b8cc !important;
+  color: #fff !important;
+}
+
+/* ─── EDITOR TOOLBAR ──────────────────────────────────────── */
+.editor-toolbar {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(44,55,82,0.12);
+  padding: 16px 20px;
+  margin: 16px 0;
+  border: 1px solid #e0e4ed;
+}
+
+.toolbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #2c3752;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.toolbar-edit-btn:hover {
+  background: #1a2440;
+  color: #fff;
+  transform: translateY(-1px);
+}
+.toolbar-edit-icon { font-size: 16px; }
+
+.toolbar-downloads {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dl-btn {
+  background: #f4f6fb;
+  color: #2c3752;
+  border: 1px solid #c9cfde;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.dl-btn:hover { background: #2c3752; color: #fff; }
+
+/* Edit mode panel that slides open */
+.edit-mode-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e8ebf3;
+  animation: slideDown 0.2s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.edit-mode-heading {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8892a4;
+  margin-bottom: 10px;
+}
+
+/* Mode chip buttons */
+.edit-mode-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.mode-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 2px solid #d0d5e3;
+  background: #f9fafd;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5370;
+  transition: 0.18s;
+  user-select: none;
+}
+.mode-chip input[type="checkbox"] { display: none; }
+.mode-chip:hover {
+  border-color: #2c3752;
+  background: #eef0f8;
+}
+.mode-chip:has(input:checked) {
+  border-color: #2c3752;
+  background: #2c3752;
+  color: #fff;
+}
+.chip-icon { font-size: 16px; }
+
+/* Drag & Drop hint banner */
+.drag-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eef4ff;
+  border: 1px dashed #7aaaf5;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #3362b8;
+  margin-bottom: 12px;
+}
+.drag-hint-icon { font-size: 18px; }
+
+/* Save / Cancel row */
+.action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.action-save {
+  background: #2c3752;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.action-save:hover { background: #1a2440; color: #fff; }
+.action-cancel {
+  background: #fff;
+  color: #c0392b;
+  border: 1px solid #c0392b;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.action-cancel:hover { background: #fdf0ef; color: #c0392b; }
+
+/* ─── DRAG & DROP CELL STATES ─────────────────────────────── */
+/* Source cell being dragged (desktop) */
+.editable-cell[draggable="true"]:active {
+  opacity: 0.45;
+  outline: 2px dashed #4a90e2;
+}
+
+/* Drop-zone highlight when dragging over (desktop) */
+.editable-cell.drag-over {
+  background: rgba(74, 144, 226, 0.14) !important;
+  outline: 2px dashed #4a90e2 !important;
+  transition: background 0.1s, outline 0.1s;
+}
+
+/* Swap success flash */
+@keyframes swapFlash {
+  0%   { background: rgba(39, 174, 96, 0.35); }
+  60%  { background: rgba(39, 174, 96, 0.15); }
+  100% { background: ''; }
+}
+.editable-cell.swap-flash {
+  animation: swapFlash 0.7s ease forwards;
+}
+
+/* Cursor cue when drag mode is on */
+.editable-cell[draggable="true"] { cursor: grab; }
+
+/* ─── EDITOR TOOLBAR — MOBILE ────────────────────────────── */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    margin: 10px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .toolbar-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-edit-btn {
+    justify-content: center;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .toolbar-downloads {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* JS sets display:none via inline style to hide; this ensures grid when visible on mobile */
+  .toolbar-downloads:not([style*="display: none"]):not([style*="display:none"]) {
+    display: grid !important;
+  }
+
+  .dl-btn {
+    text-align: center;
+    padding: 9px 6px;
+    font-size: 12px;
+    width: 100%;
+  }
+
+  .edit-mode-options {
+    gap: 8px;
+  }
+
+  .mode-chip {
+    flex: 1 1 calc(33% - 8px);
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .action-row {
+    gap: 8px;
+  }
+
+  .action-save,
+  .action-cancel {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+/* ─── CLOSE / DELETE BUTTON ──────────────────────────────── */
+/* Position the ✕ button in the top-right corner of each cell */
+.editable-cell {
+  position: relative;
+}
+.close-btn {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 12px;
+  line-height: 1;
+  color: #c0392b;
+  cursor: pointer;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: none; /* hidden by default, shown by JS */
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  z-index: 5;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid #e74c3c;
+  transition: background 0.15s;
+  user-select: none;
+}
+.close-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  /* Bigger tap target on mobile */
+  .close-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 15px !important;
+    top: 2px !important;
+    right: 2px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+}

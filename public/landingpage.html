@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+        integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <title>TimeTabler</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="home.js"></script>
+    <link rel="stylesheet" href="home.css">
+    <script src="faqs.js"></script>
+    <link rel="stylesheet" href="faqs.css">
+    <link rel="stylesheet" href="about.css">
+    <link rel="stylesheet" href="contact.css">
+    <link rel="stylesheet" href="responsive.css">
+
+    <!-- <link rel="stylesheet" href="style.css1"> -->
+    <style>
+        .menu {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
+        #toggle {
+            display: none !important;
+        }
+
+        .toggle-btn {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .head {
+            display: flex;
+            width: 180px;
+            height: 60px;
+            justify-content: center;
+            align-items: center;
+            font-size: 25px;
+        }
+
+        .page {
+            transition: 0.3s;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .start-btn {
+            cursor: pointer;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.305);
+            /* backdrop-filter: blur(10px); */
+            border: none;
+            transition: 0.25s;
+        }
+
+        .text-btn {
+            z-index: 1;
+            position: relative;
+        }
+
+        .wave {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            background: url(Assets/wave.svg);
+            background-size: 200% 100%;
+            top: 100%;
+            left: 0;
+            animation: wave 2s linear infinite;
+            transition: 0.3s;
+        }
+
+        .start-btn:hover .wave {
+            top: 50%;
+        }
+
+        @keyframes wave {
+            from {
+                background-position-x: 0;
+            }
+
+            to {
+                background-position-x: 200%;
+            }
+        }
+
+        #signup-btn {
+            position: absolute;
+            border-radius: 10px;
+            padding: 6px 18px 6px 18px;
+            right: 16%;
+        }
+
+        #login-btn {
+            position: absolute;
+            border-radius: 10px;
+            padding: 6px 18px 6px 18px;
+            right: 6%;
+        }
+
+        #register-btn {
+            position: relative;
+            border-radius: 20px;
+            top: 450px;
+            padding: 5px 15px 5px 15px;
+            width: 250px;
+            height: 60px;
+            left: 50%;
+            /* transform: translateX(-50%); */
+            animation: register 5s ease-in-out infinite;
+            border: 0.5px solid white;
+        }
+
+        @keyframes register {
+            0% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.1);
+            }
+
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        .toggle-btn2 {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tittle {
+            margin-left: 15px;
+            transition: 0.25s;
+        }
+
+        #toggle:checked~.page {
+            transform: translate(15%, 10%);
+            left: 0 !important;
+            height: 95vh !important;
+            overflow: hidden;
+        }
+
+        #toggle:not(:checked)~.page .head #home-name {
+            opacity: 0;
+        }
+
+        #toggle:checked~.page .head .toggle-btn2 {
+            opacity: 0;
+            z-index: -1;
+        }
+
+        #toggle:checked~.page .head .tittle {
+            transform: translateX(-30px)
+        }
+
+        #toggle:checked~.page .main {
+            opacity: 0;
+        }
+
+        #toggle:checked~.page #login-btn {
+            opacity: 0;
+        }
+
+        #toggle:checked~#page2 {
+            transform: translate(30%, 20%);
+            left: 0 !important;
+        }
+
+        #toggle:checked~#page3 {
+            transform: translate(45%, 30%);
+            left: 0 !important;
+        }
+
+        #toggle:checked~#page4 {
+            transform: translate(60%, 40%);
+            left: 0 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div>
+                <h1>TimeTabler</h1>
+            </div>
+        </nav>
+    </header>
+
+    <div class="middle">
+        <div class="menu">
+            <input type="checkbox" name="" id="toggle">
+            <label for="toggle" class="toggle-btn">
+                <i class="fa fa-times" aria-hidden="true" style="font-size: 30px;"></i>
+            </label>
+
+            <div id="page1" class="page">
+
+                <div class="head">
+                    <label for="toggle" class="toggle-btn2">
+                        <i class="fa fa-bars" aria-hidden="true"></i>
+                    </label>
+                    <div class="tittle" id="home-name">HOME</div>
+                </div>
+
+
+
+                <div class="main" id="home-main">
+
+                    <div class="cube-section">
+                        <div class="cube-container">
+                            <div class="cube">
+                                <div class="side front">
+                                    <h3>Automatically Generate Your Ideal Timetable—No Hassle, Just Results!</h3>
+                                </div>
+                                <div class="side back">
+                                    <h3>Your Timetable, Your Way—Personalize Every Detail!</h3>
+                                </div>
+                                <div class="side left">
+                                    <h3>Stay on Track—We Adjust Your Timetable for Absences!</h3>
+                                </div>
+                                <div class="side right">
+                                    <h3>Take Your Schedule Anywhere—Download and Go!</h3>
+                                </div>
+                                <div class="side top">
+                                    <h3>Your Timetable, Safeguarded: Access and Modify Anytime, Anywhere!</h3>
+                                </div>
+                                <div class="side bottom">
+                                    <h3>Input Made Easy: Tailor Your Timetable with Just a Few Clicks</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="center">
+                        <div class="text" id="text1">
+                            <div class="letter">
+                                <span>T</span>
+                            </div>
+                            <div class="letter">
+                                <span>I</span>
+                            </div>
+                            <div class="letter">
+                                <span>M</span>
+                            </div>
+                            <div class="letter">
+                                <span>E</span>
+                            </div>
+                        </div>
+
+                        <div class="text" id="text2">
+
+                            <div class="letter">
+                                <span>T</span>
+                            </div>
+                            <div class="letter">
+                                <span>A</span>
+                            </div>
+                            <div class="letter">
+                                <span>B</span>
+                            </div>
+                            <div class="letter">
+                                <span>L</span>
+                            </div>
+                            <div class="letter">
+                                <span>E</span>
+                            </div>
+                            <div class="letter">
+                                <span>R</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="register-btn" class="start-btn">
+                        <div class="text-btn" style="color: #f80707;font-size: 30px; font-weight: bolder; "><a href="/workspace"
+                            style="text-decoration: none; color: #f80707;">Get Started!</a>
+                        </div>
+                        <div class="wave"></div>
+                    </button>
+
+                    <section id="how-it-works">
+                        <div class="steps">
+                            <div class="step">
+                                <h2>Step 1: Let's Begin</h2>
+                                <p>Click on "Get Started" button to create professional timetables in minutes.</p>
+                            </div>
+                            <img src="Assets/sign up.png" alt="sign up image" width="40%">
+                        </div>
+
+                        <div class="steps">
+                            <img src="Assets/enter-details.svg" alt="image" width="40%">
+                            <div class="step">
+                                <h2>Step 2: Enter Your Preferences</h2>
+                                <p>Choose your subjects, faculty, and time preferences for the week.</p>
+                            </div>
+                        </div>
+
+                        <div class="steps">
+                            <div class="step">
+                                <h2>Step 3: Generate Your Timetable</h2>
+                                <p>Click to automatically generate your personalized timetable in seconds.</p>
+                            </div>
+                            <img src="Assets/click to automate.png" alt="image" width="40%">
+                        </div>
+
+                        <div class="steps">
+                            <img src="Assets/download and customize.png" alt="download-image" width="40%">
+                            <div class="step">
+                                <h2>Step 4: Download and Save</h2>
+                                <p>Download your timetable as PDF, Excel, or JSON format. Save the JSON file to edit your timetable later by uploading it back to the generator.</p>
+                            </div>
+                        </div>
+
+                    </section>
+
+                </div>
+
+            </div>
+
+            <div id="page2" class="page">
+                <div class="head">
+                    <label for="toggle" class="toggle-btn2">
+                        <i class="fa fa-bars" aria-hidden="true"></i>
+                    </label>
+                    <div class="tittle">ABOUT</div>
+                </div>
+
+                <div class="main" id="about-main">
+                    <h2>About TimeTabler</h2>
+
+                    <hr>
+
+                    <h3 style="text-align: center;">Revolutionizing Your Scheduling Experience</h3>
+
+                    <div class="about-section">
+                        <img src="Assets/about.svg" alt="Team image" width="50%">
+                        <div style="width: 40%;">
+                            <h3>What We Do</h3>
+                            <p>TimeTabler simplifies the process of creating and managing personalized timetables for
+                                students, teachers, and institutions. With a few clicks, you can generate dynamic
+                                timetables based on your preferences.</p>
+
+                            <h3 style="margin-top: 35px;">Our Mission</h3>
+                            <p>To offer a seamless and efficient scheduling solution that saves time and reduces manual
+                                effort, making scheduling hassle-free for everyone.</p>
+
+
+                        </div>
+                    </div>
+
+                    <div class="why">
+                        <div class="why-this-website">
+
+                            <h3>Why Choose TimeTabler</h3>
+                            <ul>
+                                <li>User-Friendly Interface: Create timetables with just a few simple inputs.</li>
+                                <li>Customizable: Easily edit and download timetables whenever needed.</li>
+                                <li>Absence Management: Handle teacher absences and substitutions effortlessly.</li>
+                                <li>Completely Free: No charges—available to everyone at no cost.</li>
+                            </ul>
+                        </div>
+                        <img src="Assets/why-to-choose.svg" alt="image" width="50%">
+                    </div>
+                </div>
+
+
+
+            </div>
+
+            <div id="page3" class="page">
+
+                <div class="head">
+                    <label for="toggle" class="toggle-btn2">
+                        <i class="fa fa-bars" aria-hidden="true"></i>
+                    </label>
+                    <div class="tittle">FAQS</div>
+                </div>
+
+                <div class="main" id="faq-main">
+                    <div class="search">
+                        <form>
+                            <i class="fa fa-search" id="search_icon" aria-hidden="true"></i>
+                            <input type="text" id="search-question" placeholder="Type your Question" onkeyup="search()">
+                        </form>
+
+                        <div class="question-list" id="question-list">
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp; What is TimeTabler?</h3>
+                                <p>TimeTabler is a timetable generator platform that allows users to automatically
+                                    create, edit, customize, and download timetables, making scheduling easy and
+                                    efficient for schools, colleges, and organizations.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How does the timetable generation
+                                    work?</h3>
+                                <p>Our system uses dynamic algorithms to generate optimized timetables based on inputs
+                                    such as faculty availability, class schedules, subject preferences, and weekly
+                                    hours, saving you the hassle of manual scheduling.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Can I customize my generated
+                                    timetable?
+                                </h3>
+                                <p>Yes! During your current session, you can edit and customize your timetable in the Customizer mode—adjust timings, swap classes, and make any changes you need. Your customized version is saved on the server and can be downloaded in JSON format to keep for future edits.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Is it possible to download the
+                                    timetables?</h3>
+                                <p>Absolutely! You can download your timetables in three formats: PDF for printing and sharing, Excel for spreadsheet use, and JSON for future editing. Simply upload the JSON file anytime to make further changes to your timetable.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Does TimeTabler manage absence of
+                                    teachers?</h3>
+                                <p>Yes, TimeTabler has an absence management feature that allows you to track and
+                                    adjust timetables based on teacher absences, ensuring minimal disruption to the
+                                    schedule.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Do I need to sign up to use
+                                    TimeTabler?</h3>
+                                <p>No! TimeTabler is completely open and free for everyone to use. Simply click "Get Started" and begin generating your timetables right away—no sign up or login required!</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Who can use TimeTabler?</h3>
+                                <p>TimeTabler is perfect for schools, colleges, universities, and organizations that
+                                    need to manage class schedules, training sessions, or any other recurring events.
+                                </p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Is TimeTabler free to use?
+                                </h3>
+                                <p>Yes, TimeTabler is completely free to use! You can access all features, including
+                                    timetable generation, customization, and downloads, without any cost.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Can I generate timetables for
+                                    different departments or courses?</h3>
+                                <p>Yes, TimeTabler allows you to create and manage timetables for multiple departments
+                                    or courses simultaneously, giving flexibility for various academic or organizational
+                                    needs.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Can TimeTabler handle complex
+                                    timetables with multiple constraints?</h3>
+                                <p>Yes, TimeTabler is designed to handle complex schedules with multiple constraints,
+                                    such as limited room availability, overlapping subjects, and specific faculty
+                                    preferences, ensuring an optimized timetable for all situations.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;What inputs do I need to provide to
+                                    generate a timetable?</h3>
+                                <p>You will need to input details like faculty names, subject expertise, class names,
+                                    weekly hours per subject, and the available time slots or rooms. TimeTablerr will
+                                    then automatically generate the timetable based on this data.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How can I access my saved timetables?
+                                </h3>
+                                <p>Your timetables are stored on our server during your session. To access and edit a timetable later, download the JSON file when you're done. Simply upload this JSON file back to the generator anytime to load and continue editing your saved timetable.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp; Does TimeTabler support mobile
+                                    devices?</h3>
+                                <p>Yes, TimeTabler is optimized for mobile devices, allowing you to generate, edit, and
+                                    manage timetables on the go from any smartphone or tablet.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How often can I edit or regenerate a
+                                    timetable?</h3>
+                                <p>During your current session, you can edit and regenerate your timetable unlimited times without any restrictions. To continue editing a saved timetable later, download it as a JSON file and upload it back to the generator whenever you need to make changes.</p>
+                            </div>
+
+                            <div class="Question">
+                                <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How secure is my data on TimeTabler?
+                                </h3>
+                                <p>Your data remains completely in your control. We don't collect or store any personal information. During your session, timetables are stored on our server for your convenience. To ensure your data security, download the JSON file of your completed timetables—once you close your session or clear your browser, you can always reload them by uploading the JSON file again.</p>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="page4" class="page">
+
+                <div class="head">
+                    <label for="toggle" class="toggle-btn2">
+                        <i class="fa fa-bars" aria-hidden="true"></i>
+                    </label>
+                    <div class="tittle">CONTACT</div>
+                </div>
+
+                <div class="main contact-main">
+                    <h2 id="contact-us">Contact Us</h2>
+                    <div id="contact-section">
+
+                        <div class="contact-left">
+
+                            <div style="display: flex; gap: 20px;">
+                                <i class="fa-brands fa-linkedin" style="color: #062061; font-size: 35px;"></i>
+                                <div>
+                                    <h4 style="font-size: 30px;">LinkedIn</h4>
+                                    <p style="font-size: 24px;"><a href="https://www.linkedin.com/in/umar-farooque-ansari?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" style="text-decoration: underline; color: #2a407d;">Connect With Me</a></p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 18px;">
+                                <i class="fa-brands fa-github" style="color: #062061; font-size: 35px;"></i>
+                                <div>
+                                    <h4 style="font-size: 30px;">GitHub</h4>
+                                    <p style="font-size: 24px;"><a href="https://github.com/Umar-MHSSCE" target="_blank" style="text-decoration: underline; color: #2a407d;">View My Profile</a></p>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="contact-form">
+                            <h2 class="send-message">Send Message</h2>
+                            <form action="/submit_message" method="POST">
+                                <div class="form-group">
+                                    <label for="full-name" class="contact-label">Full Name</label>
+                                    <input type="text" id="full-name" name="full-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email" class="contact-label">Email</label>
+                                    <input type="email" id="email" name="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="message" class="contact-label">Type Your Message</label>
+                                    <textarea id="message" name="message" required></textarea>
+                                </div>
+                                <button type="submit" class="click-to-send">Send</button>
+                            </form>
+                        </div>
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+
+    <script>
+        let pages = document.querySelectorAll(".page");
+        let toggle = document.getElementById("toggle");
+
+        // Function to hide all pages except the active one
+        function hideAllPages() {
+            pages.forEach(page => {
+                page.classList.remove('active'); // Remove active class from all pages
+                page.style.display = 'none'; // Hide all pages
+            });
+        }
+
+        // Function to show only the clicked page
+        function showPage(page) {
+            hideAllPages(); // Hide all other pages
+            page.classList.add('active'); // Add active class to the clicked page
+            page.style.display = 'block'; // Make the clicked page visible
+        }
+
+        // Add event listeners to each page for switching
+        pages.forEach((page) => {
+            page.addEventListener("click", () => {
+                if (toggle.checked) {  // If sidebar is open (checkbox is checked)
+                    showPage(page); // Switch to the clicked page
+                    toggle.checked = false; // Automatically close the sidebar (uncheck the toggle)
+                }
+            });
+        });
+
+        // Toggle event to show/hide the pages based on checkbox status
+        toggle.addEventListener("change", () => {
+            if (toggle.checked) {
+                // Sidebar is open, show all pages so user can switch between them
+                pages.forEach(page => {
+                    page.style.display = 'block'; // Show all pages
+                });
+            } else {
+                // Sidebar is closed, show only the active page
+                pages.forEach(page => {
+                    if (!page.classList.contains('active')) {
+                        page.style.display = 'none'; // Hide non-active pages
+                    }
+                });
+            }
+        });
+
+        // Set the first page to be active by default
+        showPage(pages[0]); // Show the first page (HOME) on load
+
+    </script>
+
+</body>
+
+</html>

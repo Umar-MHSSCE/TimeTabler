@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timetable Generator</title>
+  <!-- SheetJS Library for reading Excel files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="generator.css">
+  <link rel="stylesheet" href="generator-responsive.css">
+</head>
+
+<body>
+  <div class="page">
+    <header>
+      <nav>
+        <h1>TimeTabler</h1>
+        <div class="container">
+          <label class="switch">
+            <input type="checkbox" id="modeToggle" />
+            <div class="switch-labels">
+              <span>Generator</span>
+              <span>Customizer</span>
+            </div>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </nav>
+    </header>
+
+    <div class="generator">
+      <div class="inputform">
+        <h1 style="text-align: center;">Input Form</h1>
+        <form id="timetableForm">
+          <!-- Department Information -->
+          <div class="form-section">
+            <label>
+              Department Name:
+              <input type="text" name="department" required />
+            </label>
+          </div>
+          <!-- Excel File Upload for Classes -->
+          <div class="form-section">
+            <h2>Classes Data</h2>
+            <p>
+              Upload an Excel file for Classes. Each sheet represents a class; the sheet name is used as the
+              <strong>className</strong>. Each sheet must have the following columns:
+            </p>
+            <ul>
+              <li><strong>Subject Name</strong></li>
+              <li><strong>Type</strong> (e.g., "Theory" or "Practical")</li>
+              <li><strong>Hours per Week</strong></li>
+            </ul>
+            <input type="file" id="classesExcel" accept=".xlsx, .xls" required />
+          </div>
+          <!-- Excel File Upload for Faculty -->
+          <div class="form-section">
+            <h2>Faculty Data</h2>
+            <p>
+              Upload an Excel file for Faculty. Each sheet represents a faculty member; the sheet name is taken as the
+              <strong>facultyName</strong>. Each sheet should have:
+            </p>
+            <ul>
+              <li><strong>Subject Name</strong></li>
+              <li><strong>Type</strong> (e.g., "Theory" or "Practical")</li>
+            </ul>
+            <input type="file" id="facultyExcel" accept=".xlsx, .xls" required />
+          </div>
+          <!-- Time, Lecture Duration and New Limit Fields -->
+          <div class="form-section">
+            <label>
+              Start Time of the Day (HH:MM):
+              <input type="time" name="startTime" required />
+            </label>
+            <label>
+              End Time of the Day (HH:MM):
+              <input type="time" name="endTime" required />
+            </label>
+            <label>
+              Duration of One Lecture (in hours):
+              <input type="number" step="0.1" name="lectureDuration" required />
+            </label>
+            <!-- New Feature: Configurable maximum lectures per day for a faculty -->
+            <label>
+              Max Lectures Per Day for a Faculty:
+              <input type="number" name="maxFacultyLecturesPerDay" required value="4" />
+            </label>
+            <!-- New Feature: Configurable maximum lectures per day for a subject -->
+            <label>
+              Max Number of Lectures for a Subject per Day:
+              <input type="number" name="maxSubjectLecturesPerDay" required value="2" />
+            </label>
+          </div>
+          <!-- Break Times for Weekdays -->
+          <div class="form-section">
+            <h2>Break Times</h2>
+            <div id="breaksContainer">
+              <div class="breakInput">
+                <label>
+                  Break Start:
+                  <input type="time" name="breakStart">
+                </label>
+                <label>
+                  Break End:
+                  <input type="time" name="breakEnd">
+                </label>
+              </div>
+            </div>
+            <button type="button" id="addBreak">Add Another Break</button>
+          </div>
+          <!-- Saturday Scheduling Options -->
+          <div class="form-section">
+            <label>
+              <input type="checkbox" id="saturdayEnabled" name="saturdayEnabled">
+              Enable Saturday Scheduling (Custom Timings)
+            </label>
+            <div id="saturdayOptions" style="display: none;">
+              <label>
+                Saturday Start Time (HH:MM):
+                <input type="time" name="saturdayStartTime">
+              </label>
+              <label>
+                Saturday End Time (HH:MM):
+                <input type="time" name="saturdayEndTime">
+              </label>
+              <!-- Saturday Break Times -->
+              <div class="form-section">
+                <h3>Saturday Break Times</h3>
+                <div id="saturdayBreaksContainer">
+                  <div class="saturdayBreakInput">
+                    <label>
+                      Saturday Break Start:
+                      <input type="time" name="saturdayBreakStart">
+                    </label>
+                    <label>
+                      Saturday Break End:
+                      <input type="time" name="saturdayBreakEnd">
+                    </label>
+                  </div>
+                </div>
+                <button type="button" id="addSaturdayBreak">Add Another Saturday Break</button>
+              </div>
+            </div>
+          </div>
+          <!-- Rooms and Labs Information -->
+          <div class="form-section">
+            <label>
+              Number of Classrooms Available (for theory lectures):
+              <input type="number" name="numberOfRooms" required>
+            </label>
+            <label>
+              Number of Labs Available (for practical lectures):
+              <input type="number" name="numberOfLabs" required>
+            </label>
+          </div>
+          <!-- Final Submit Button -->
+          <input type="submit" id="generateButton" value="Generate">
+        </form>
+      </div>
+
+
+      <div class="output">
+        <!-- Output area for the generated timetable -->
+        <div id="timetableOutput"></div>
+
+        <!-- New buttons for Faculty and Resource Timetables -->
+        <div style="margin-top: 20px;">
+          <button id="displayFacultyTimetable">Display Faculty Timetable</button>
+          <button id="displayResourceTimetable">Display Resource Timetable</button>
+        </div>
+
+        <!-- Containers for new outputs -->
+        <div id="facultyTimetableOutput" style="margin-top:20px;"></div>
+        <div id="resourceTimetableOutput" style="margin-top:20px;"></div>
+
+        <!-- New Download Options -->
+        <div id="download-options" style="margin-top:20px;">
+          <button onclick="downloadAsClassPDF()">Class Schedule - PDF</button>
+          <button onclick="downloadAsFacultyPDF()">Faculty Schedule - PDF</button>
+          <button onclick="downloadAsResourcePDF()">Resource Schedule - PDF</button>
+          <button onclick="downloadAsWord()">Timetable - Word</button>
+          <button onclick="downloadAsExcel()">Timetable - Excel</button>
+          <button onclick="downloadAsJSON()">Save JSON file (For Editing)</button>
+          <button id="editGeneratedTimetable"
+            style="background-color: #4CAF50; color: white; margin-left: 10px;">Customize Timetable</button>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="customizer">
+      <!-- Upload Interface (already present) -->
+      <div class="section">
+        <div class="upload-container" id="dropZone">
+          <p>Drag & Drop JSON file here</p>
+          <p>or</p>
+          <button class="btn" id="browseBtn">Browse</button>
+          <input type="file" id="fileInput" accept="application/json">
+        </div>
+      </div>
+
+      <div class="editor">
+        <!-- Unified Editor Toolbar -->
+        <div class="editor-toolbar" id="editorToolbar">
+          <div class="toolbar-top">
+            <button id="edit-btn" class="toolbar-edit-btn">
+              <span class="toolbar-edit-icon">✏️</span>
+              <span>Edit Timetable</span>
+            </button>
+            <div class="toolbar-downloads" id="toolbarDownloads" style="display: none;">
+              <button onclick="downloadAsJSON()" class="dl-btn">⬇ JSON</button>
+              <button onclick="downloadAsPDF()" class="dl-btn">⬇ PDF</button>
+              <button onclick="downloadAsExcel()" class="dl-btn">⬇ Excel</button>
+            </div>
+          </div>
+
+          <!-- Edit Mode Panel (slides open) -->
+          <div id="editOptions" class="edit-mode-panel" style="display: none;">
+            <div class="edit-mode-heading">Choose edit mode</div>
+            <div class="edit-mode-options">
+              <label class="mode-chip" id="chip-text">
+                <input type="checkbox" id="editText">
+                <span class="chip-icon">🖊</span>
+                <span class="chip-label">Edit Text</span>
+              </label>
+              <label class="mode-chip" id="chip-drag">
+                <input type="checkbox" id="editDragDrop">
+                <span class="chip-icon">⇄</span>
+                <span class="chip-label">Drag & Drop</span>
+              </label>
+              <label class="mode-chip" id="chip-delete">
+                <input type="checkbox" id="enableDelete">
+                <span class="chip-icon">🗑</span>
+                <span class="chip-label">Delete</span>
+              </label>
+            </div>
+
+            <!-- Drag & Drop hint banner (shown when drag enabled) -->
+            <div id="dragHint" class="drag-hint" style="display:none;">
+              <span class="drag-hint-icon">☝</span>
+              <span>Desktop: drag a cell onto another to swap. &nbsp;|&nbsp; Mobile: hold 2 s then drag.</span>
+            </div>
+
+            <div id="actionButtons" class="action-row">
+              <button id="save-btn" class="action-save action-save-disabled" disabled>✓ Save Changes</button>
+              <button id="cancel-btn" class="action-cancel">✕ Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="customizerOutput" style="margin-top: 30px;"></div>
+        <div id="previewComparison" style="margin-top: 30px;"></div>
+      </div>
+
+
+    </div>
+
+  </div>
+
+  </div>
+
+  <!-- Toast notification -->
+  <div id="cancelToast" style="
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3752;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+    z-index: 99999;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  ">
+    ↩ Changes discarded — timetable restored to last saved state.
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('modeToggle');
+      const generatorDiv = document.querySelector('.generator');
+      const customizerDiv = document.querySelector('.customizer');
+
+      function updateView() {
+        if (toggle.checked) {
+          generatorDiv.style.display = 'none';
+          customizerDiv.style.display = 'block';
+        } else {
+          generatorDiv.style.display = 'block';
+          customizerDiv.style.display = 'none';
+        }
+      }
+
+      document.getElementById('editGeneratedTimetable').addEventListener('click', () => {
+        if (window.generatedData) {
+          // Switch to customizer view
+          toggle.checked = true;
+          updateView();
+
+          // Load data
+          editableData = JSON.parse(JSON.stringify(window.generatedData));
+          renderEditableTimetable(editableData);
+          // Scroll to top so user lands at editor toolbar
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          alert("Please generate a timetable first.");
+        }
+      });
+      toggle.addEventListener('change', updateView);
+      updateView(); // set initial state on load
+    });
+  </script>
+
+  <script>
+    async function confirmChanges() {
+      const confirmed = confirm("Are you sure you want to save your changes and overwrite the timetable?");
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch('/updateTimetable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editableData)
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save timetable");
+        }
+
+        alert("Timetable successfully updated.");
+        generatedData = JSON.parse(JSON.stringify(editableData)); // sync updated data
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred while saving the timetable.");
+      }
+    }
+
+  </script>
+
+  <script>
+    // Global editable data store
+    // let generatedData = null;
+    let editableData = null;
+    let originalSnapshot = null;
+    let draggedCellId = null; // changed from draggedItem
+    let isDirty = false;      // true only after at least one change is made
+    let hasSaved = false;     // true once timetable has been saved at least once
+
+    function markDirty() {
+      if (isDirty) return;
+      isDirty = true;
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = false;
+      saveBtn.classList.remove('action-save-disabled');
+    }
+
+    function resetDirty() {
+      isDirty = false;
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.classList.add('action-save-disabled');
+    }
+
+    (function () {
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('fileInput');
+      const browseBtn = document.getElementById('browseBtn');
+
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+      });
+
+      dropZone.addEventListener('drop', handleDrop, false);
+      browseBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', handleFiles, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles({ target: { files } });
+      }
+
+      function handleFiles(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        if (file.type !== 'application/json') {
+          alert('Please upload a valid JSON file.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          try {
+            const jsonData = JSON.parse(event.target.result);
+            generatedData = jsonData;
+            editableData = JSON.parse(JSON.stringify(jsonData));
+            renderEditableTimetable(editableData);
+            // Scroll to top so user sees the editor toolbar
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (err) {
+            alert('Error parsing JSON: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      }
+    })();
+
+    function renderEditableTimetable(data) {
+      document.querySelector('.editor').style.display = 'block';
+
+      // Reset toolbar to clean state — only Edit button visible
+      document.getElementById('editOptions').style.display = 'none';
+      document.getElementById('toolbarDownloads').style.display = 'none';
+      hasSaved = false;
+      resetDirty();
+
+      const container = document.getElementById('customizerOutput');
+      container.innerHTML = '';
+
+      for (const cls in data.timetable) {
+        const days = Object.keys(data.timetable[cls]);
+        const slotCount = data.timetable[cls][days[0]].length;
+
+        let html = `<h2 style="text-align:center;">${cls}</h2>
+      <table border="1" style="width:100%; margin-bottom:20px;">
+        <thead><tr><th>Time</th>${days.map(day => `<th>${day}</th>`).join('')}</tr></thead>
+        <tbody>`;
+
+        for (let i = 0; i < slotCount; i++) {
+          html += `<tr><td>${data.timetable[cls][days[0]][i].time.start} - ${data.timetable[cls][days[0]][i].time.end}</td>`;
+          for (const day of days) {
+            const lecture = data.timetable[cls][day][i].lecture || { subject: '', faculty: '', venue: '' };
+            const cellId = `cell–${cls}–${day}–${i}`;
+            html += `<td id="${cellId}" class="editable-cell" draggable="false">
+                  <div class="lecture-content" contenteditable="false">${lecture.subject}<br>${lecture.faculty}<br>${lecture.venue}</div>
+                  <span class="close-btn" style="display:none;">✕</span>
+              </td>`;
+          }
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+        container.insertAdjacentHTML('beforeend', html);
+      }
+
+      enableEditOptions();
+    }
+
+    function parseCellId(id) {
+      const [_, cls, day, index] = id.split('–');
+      return { className: cls, day, index: parseInt(index, 10) };
+    }
+
+    function enableEditOptions() {
+      const enableText = document.getElementById('editText').checked;
+      const enableDrag = document.getElementById('editDragDrop').checked;
+      const enableDelete = document.getElementById('enableDelete').checked;
+
+      const cells = document.querySelectorAll('.editable-cell');
+
+      cells.forEach(cell => {
+        const content = cell.querySelector('.lecture-content');
+        content.contentEditable = enableText;
+        if (enableText) {
+          content.addEventListener('blur', onCellTextEdit);
+        } else {
+          content.removeEventListener('blur', onCellTextEdit);
+        }
+
+        cell.setAttribute('draggable', enableDrag);
+        if (enableDrag) {
+          // Desktop mouse
+          cell.ondragstart  = dragStart;
+          cell.ondrop       = drop;
+          cell.ondragover   = e => { e.preventDefault(); cell.classList.add('drag-over'); };
+          cell.ondragleave  = () => cell.classList.remove('drag-over');
+          // Mobile touch (2-second long-press to activate)
+          cell.ontouchstart  = touchStart;
+          cell.ontouchmove   = touchMove;
+          cell.ontouchend    = touchEnd;
+          cell.ontouchcancel = touchCancel;
+        } else {
+          cell.ondragstart   = null;
+          cell.ondrop        = null;
+          cell.ondragover    = null;
+          cell.ondragleave   = null;
+          cell.ontouchstart  = null;
+          cell.ontouchmove   = null;
+          cell.ontouchend    = null;
+          cell.ontouchcancel = null;
+        }
+
+        const closeBtn = cell.querySelector('.close-btn');
+        if (enableDelete) {
+          closeBtn.style.display = 'inline';
+          // Remove any previous listener to avoid duplicates
+          const newCloseBtn = closeBtn.cloneNode(true);
+          closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+          newCloseBtn.style.display = 'flex';
+          newCloseBtn.onclick = (e) => {
+            e.stopPropagation();
+            const { className, day, index } = parseCellId(cell.id);
+            // Clear in data model
+            editableData.timetable[className][day][index].lecture = {
+              subject: '', faculty: '', venue: '',
+              time: editableData.timetable[className][day][index].time
+            };
+            // Update only the cell's content — no full re-render
+            const content = cell.querySelector('.lecture-content');
+            if (content) content.innerHTML = '&nbsp;<br>&nbsp;<br>&nbsp;';
+            // Mark as changed so Save button enables
+            markDirty();
+          };
+        } else {
+          closeBtn.style.display = 'none';
+        }
+      });
+    }
+
+    document.getElementById('editText').addEventListener('change', enableEditOptions);
+    document.getElementById('editDragDrop').addEventListener('change', () => {
+      enableEditOptions();
+      const hint = document.getElementById('dragHint');
+      if (hint) hint.style.display = document.getElementById('editDragDrop').checked ? 'flex' : 'none';
+    });
+    document.getElementById('enableDelete').addEventListener('change', enableEditOptions);
+
+    function onCellTextEdit(e) {
+      const cell = e.currentTarget.closest('.editable-cell');
+      const { className, day, index } = parseCellId(cell.id);
+      const lines = e.currentTarget.innerText.trim().split('\n').map(line => line.trim());
+
+      editableData.timetable[className][day][index].lecture = {
+        subject: lines[0] || '',
+        faculty: lines[1] || '',
+        venue: lines[2] || '',
+        time: editableData.timetable[className][day][index].time
+      };
+      markDirty();
+    }
+
+    // ── Desktop mouse drag handlers ─────────────────────────────
+    function dragStart(event) {
+      draggedCellId = event.currentTarget.id;
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over');
+      const targetCellId = event.currentTarget.id;
+      if (!draggedCellId || draggedCellId === targetCellId) return;
+      swapCells(draggedCellId, targetCellId);
+      draggedCellId = null;
+    }
+
+    // ── Shared swap logic (mouse + touch both use this) ───────
+    function swapCells(srcId, tgtId) {
+      if (!srcId || !tgtId || srcId === tgtId) return;
+
+      const src = parseCellId(srcId);
+      const tgt = parseCellId(tgtId);
+
+      const srcSlot = editableData.timetable[src.className][src.day][src.index];
+      const tgtSlot = editableData.timetable[tgt.className][tgt.day][tgt.index];
+
+      const srcCopy = structuredClone(srcSlot.lecture);
+      const tgtCopy = structuredClone(tgtSlot.lecture);
+
+      editableData.timetable[src.className][src.day][src.index].lecture = tgtCopy;
+      editableData.timetable[tgt.className][tgt.day][tgt.index].lecture = srcCopy;
+
+      const srcEl = document.getElementById(srcId).querySelector('.lecture-content');
+      const tgtEl = document.getElementById(tgtId).querySelector('.lecture-content');
+      srcEl.innerHTML = `${tgtCopy.subject}<br>${tgtCopy.faculty}<br>${tgtCopy.venue}`;
+      tgtEl.innerHTML = `${srcCopy.subject}<br>${srcCopy.faculty}<br>${srcCopy.venue}`;
+
+      // Flash both cells green briefly so user clearly sees the swap
+      [srcId, tgtId].forEach(id => {
+        const cell = document.getElementById(id);
+        if (!cell) return;
+        cell.classList.add('swap-flash');
+        setTimeout(() => cell.classList.remove('swap-flash'), 700);
+      });
+      markDirty();
+    }
+
+    // ── Mobile touch drag — 2-second long-press to activate ───
+    //
+    // HOW IT WORKS:
+    //   touchstart  → start a 2s timer. Show a growing progress ring on the cell.
+    //                 If finger moves too much before timer fires → cancel (was a scroll).
+    //   timer fires → drag is "locked". Vibrate. Show ghost. Cell dims.
+    //   touchmove   → if locked, move ghost & highlight cell under finger.
+    //                 preventDefault() stops page scrolling during drag.
+    //   touchend    → if locked, swap source with cell under finger. Clean up.
+    //   touchcancel → clean up everything (e.g. incoming call interrupted touch).
+    //
+    // GLITCH PREVENTION:
+    //   • startX/Y recorded at touchstart; if finger moves > 10px before lock,
+    //     the timer is cancelled → accidental scrolls never trigger drag.
+    //   • Ghost is removed BEFORE elementFromPoint() so it never blocks hit-test.
+    //   • All state is reset in a single cleanup() function called from both
+    //     touchend and touchcancel — no orphaned ghosts or highlights.
+
+    const HOLD_MS   = 2000;   // 2 seconds hold to activate drag
+    const MOVE_SLOP = 10;     // px finger can drift before it counts as a scroll
+
+    let tdCellId     = null;   // id of cell being dragged
+    let tdGhost      = null;   // floating clone following finger
+    let tdHighlight  = null;   // cell currently highlighted as drop target
+    let tdTimer      = null;   // setTimeout handle
+    let tdLocked     = false;  // true once 2s hold completes
+    let tdStartX     = 0;      // finger X at touchstart
+    let tdStartY     = 0;      // finger Y at touchstart
+    let tdRing       = null;   // progress ring overlay on source cell
+
+    function touchStart(event) {
+      if (event.touches.length !== 1) return;
+      const cell  = event.currentTarget;
+      const touch = event.touches[0];
+
+      tdStartX = touch.clientX;
+      tdStartY = touch.clientY;
+
+      // Show a thin progress ring that fills over 2s so user knows to keep holding
+      tdRing = document.createElement('div');
+      tdRing.style.cssText = [
+        'position:absolute', 'inset:0', 'border-radius:inherit',
+        'pointer-events:none', 'z-index:10',
+        'background: conic-gradient(rgba(74,144,226,0.35) 0%, transparent 0%)',
+        'transition: background 2s linear'
+      ].join(';');
+      cell.style.position = 'relative';
+      cell.appendChild(tdRing);
+      // Trigger reflow so transition fires
+      void tdRing.offsetWidth;
+      tdRing.style.background = 'conic-gradient(rgba(74,144,226,0.35) 100%, transparent 100%)';
+
+      tdTimer = setTimeout(() => {
+        tdLocked = true;
+        tdCellId = cell.id;
+
+        // NOW lock out native scroll — drag is confirmed, finger must control ghost
+        cell.style.touchAction = 'none';
+
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(60);
+
+        // Remove progress ring
+        if (tdRing) { tdRing.remove(); tdRing = null; }
+
+        // Build ghost (appears AT the cell, then follows finger)
+        const rect  = cell.getBoundingClientRect();
+        const ghost = cell.cloneNode(true);
+        // Strip any inline style the clone might have copied
+        ghost.removeAttribute('style');
+        ghost.style.cssText = [
+          'position:fixed',
+          'left:'   + rect.left   + 'px',
+          'top:'    + rect.top    + 'px',
+          'width:'  + rect.width  + 'px',
+          'height:' + rect.height + 'px',
+          'opacity:0.80',
+          'pointer-events:none',
+          'z-index:9999',
+          'background:#dce8ff',
+          'border:2px solid #4a90e2',
+          'border-radius:4px',
+          'box-shadow:0 6px 18px rgba(0,0,0,0.30)',
+          'transform:scale(1.07)',
+          'transition:none',
+          'box-sizing:border-box',
+          'overflow:hidden'
+        ].join(';');
+        document.body.appendChild(ghost);
+        tdGhost = ghost;
+
+        // Dim + outline source cell
+        cell.style.opacity = '0.35';
+        cell.style.outline = '2px dashed #4a90e2';
+      }, HOLD_MS);
+    }
+
+    function touchMove(event) {
+      const touch = event.touches[0];
+
+      // If not yet locked, check if finger drifted — if so, cancel long-press
+      if (!tdLocked) {
+        const dx = Math.abs(touch.clientX - tdStartX);
+        const dy = Math.abs(touch.clientY - tdStartY);
+        if (dx > MOVE_SLOP || dy > MOVE_SLOP) {
+          clearTimeout(tdTimer); tdTimer = null;
+          if (tdRing) { tdRing.remove(); tdRing = null; }
+        }
+        return; // don't preventDefault — let page scroll normally
+      }
+
+      // Drag is active — stop page scrolling
+      event.preventDefault();
+
+      // Move ghost to centre on finger
+      if (tdGhost) {
+        tdGhost.style.left = (touch.clientX - tdGhost.offsetWidth  / 2) + 'px';
+        tdGhost.style.top  = (touch.clientY - tdGhost.offsetHeight / 2) + 'px';
+      }
+
+      // Temporarily hide ghost to hit-test what's underneath
+      if (tdGhost) tdGhost.style.visibility = 'hidden';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (tdGhost) tdGhost.style.visibility = '';
+
+      const target = el ? el.closest('.editable-cell') : null;
+
+      // Clear old highlight
+      if (tdHighlight && tdHighlight !== target) {
+        tdHighlight.style.outline    = '';
+        tdHighlight.style.background = '';
+        tdHighlight = null;
+      }
+
+      // Apply new highlight
+      if (target && target.id !== tdCellId) {
+        target.style.outline    = '2px dashed #4a90e2';
+        target.style.background = 'rgba(74,144,226,0.15)';
+        tdHighlight = target;
+      }
+    }
+
+    function touchEnd(event) {
+      if (!tdLocked) {
+        // Long-press never fired — just a tap, clean up timer/ring
+        clearTimeout(tdTimer); tdTimer = null;
+        if (tdRing) { tdRing.remove(); tdRing = null; }
+        return;
+      }
+
+      const touch = event.changedTouches[0];
+
+      // Remove ghost FIRST so elementFromPoint works correctly
+      if (tdGhost) { tdGhost.remove(); tdGhost = null; }
+
+      // Find drop target
+      const el     = document.elementFromPoint(touch.clientX, touch.clientY);
+      const target = el ? el.closest('.editable-cell') : null;
+
+      if (target && target.id !== tdCellId) {
+        swapCells(tdCellId, target.id);
+      }
+
+      cleanupTouch();
+    }
+
+    function touchCancel() {
+      cleanupTouch();
+    }
+
+    function cleanupTouch() {
+      clearTimeout(tdTimer);
+
+      if (tdGhost)     { tdGhost.remove(); }
+      if (tdRing)      { tdRing.remove(); }
+      if (tdHighlight) { tdHighlight.style.outline = ''; tdHighlight.style.background = ''; }
+
+      // Restore source cell appearance AND re-enable native scroll
+      if (tdCellId) {
+        const cell = document.getElementById(tdCellId);
+        if (cell) {
+          cell.style.opacity = '';
+          cell.style.outline = '';
+          cell.style.touchAction = ''; // unlock native scroll
+        }
+      }
+
+      tdCellId    = null;
+      tdGhost     = null;
+      tdHighlight = null;
+      tdTimer     = null;
+      tdLocked    = false;
+      tdRing      = null;
+    }
+
+
+    function saveOriginalSnapshot() {
+      originalSnapshot = JSON.parse(JSON.stringify(editableData));
+    }
+
+    function restoreOriginalSnapshot() {
+      if (originalSnapshot) {
+        editableData = JSON.parse(JSON.stringify(originalSnapshot));
+        renderEditableTimetable(editableData);
+      }
+    }
+
+    document.getElementById('edit-btn').addEventListener('click', () => {
+      const editOptions = document.getElementById('editOptions');
+      const toolbarDownloads = document.getElementById('toolbarDownloads');
+      const isEditOpen = editOptions.style.display === 'block';
+
+      if (isEditOpen) {
+        // Close edit panel — downloads stay as-is (hasSaved controls them)
+        editOptions.style.display = 'none';
+      } else {
+        // Open edit panel
+        editOptions.style.display = 'block';
+        // Only hide downloads if nothing has been saved yet
+        if (!hasSaved) toolbarDownloads.style.display = 'none';
+        saveOriginalSnapshot();
+        resetDirty();
+      }
+      enableEditOptions();
+    });
+
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      document.getElementById('editOptions').style.display = 'none';
+      document.getElementById('toolbarDownloads').style.display = 'flex';
+      hasSaved = true;
+      resetDirty();
+
+      try {
+        const response = await fetch('/updateTimetable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editableData)
+        });
+
+        if (!response.ok) throw new Error('Server error while saving.');
+
+        const updated = await response.json();
+        generatedData = updated;
+        editableData = JSON.parse(JSON.stringify(updated));
+        alert('Timetable saved! Now you can download the updated timetable or continue editing.');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    function showCancelToast() {
+      const toast = document.getElementById('cancelToast');
+      toast.style.display = 'block';
+      void toast.offsetWidth;
+      toast.style.opacity = '1';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; }, 280);
+      }, 2800);
+    }
+
+    document.getElementById('cancel-btn').addEventListener('click', () => {
+      restoreOriginalSnapshot();
+      document.getElementById('editOptions').style.display = 'none';
+      // Downloads stay visible if already saved, hidden otherwise
+      if (!hasSaved) document.getElementById('toolbarDownloads').style.display = 'none';
+      resetDirty();
+      showCancelToast();
+    });
+  </script>
+
+  <script src="script.js"></script>
+
+
+</body>
+
+</html>

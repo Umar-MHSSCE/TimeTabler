@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "docx": "^9.3.0",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "nodemailer": "^9.0.0",
+    "nodemon": "^3.1.9",
+    "pdfkit": "^0.16.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "name": "time-table-generator",
+  "version": "1.0.0",
+  "main": "server.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

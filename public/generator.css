@@ -1,0 +1,303 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  padding: 25px;
+  background-image: url(../Assets/bg14.png);
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: bottom right;
+}
+
+header nav h1 {
+  font-size: 30px;
+  color: #062061;
+  font-weight: bolder;
+}
+
+header {
+  padding: 0 20px 0 20px;
+}
+
+header nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.mode-label {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  transition: color 0.3s;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  width: 247px;
+  height: 50px;
+  background-color: #ccc;
+  border-radius: 25px;
+  /* border: 1px solid #2c3752; */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-weight: bold;
+  user-select: none;
+}
+
+.switch input {
+  display: none;
+}
+
+.switch-labels {
+  position: absolute;
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  z-index: 1;
+  padding: 0 15px;
+}
+
+.switch-labels span {
+  transition: 0.2s;
+  color: #2c3752;
+}
+
+.slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 120px;
+  height: 42px;
+  background-color: #fff;
+  border-radius: 22px;
+  transition: 0.4s;
+  z-index: 0;
+}
+
+input:checked~.slider {
+  transform: translateX(120px);
+  background-color: #2c3752;
+}
+
+input:checked~.switch-labels span {
+  color: white;
+}
+
+
+body.generator {
+  background-color: #f0f0f0;
+  color: #222;
+}
+
+body.customizer {
+  background-color: #222;
+  color: #f0f0f0;
+}
+
+.page,
+.inputform {
+  background-color: rgba(255, 255, 255, 0.305);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  padding: 20px;
+}
+
+.inputform {
+  background-color: rgba(255, 255, 255, 0);
+  margin: 20px 150px 20px 150px;
+}
+
+#timetableForm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.output {
+  background-color: rgb(255, 255, 255);
+  border-radius: 25px;
+  padding: 20px;
+}
+
+.form-section {
+  margin-bottom: 20px;
+  border: 1px solid #2e2d2d;
+  padding: 15px;
+  border-radius: 5px;
+  width: 90%;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input,
+button {
+  margin: 5px 0;
+}
+
+input {
+  font-size: 15px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid black;
+}
+
+#breaksContainer .breakInput,
+#saturdayBreaksContainer .saturdayBreakInput {
+  margin-bottom: 10px;
+  padding: 5px;
+  border: 1px dashed #494747;
+  border-radius: 3px;
+}
+
+#generateButton {
+  border-radius: 20px;
+  padding: 10px;
+  font-size: 25px;
+  font-weight: 500;
+  transition: 0.2s;
+  border: 1px solid black;
+}
+
+#generateButton:hover {
+  background-color: #2c3752;
+  color: #ffffff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+#timetableOutput table th:first-child,
+#timetableOutput table td:first-child,
+#facultyTimetableOutput table th:first-child,
+#facultyTimetableOutput table td:first-child,
+#resourceTimetableOutput table th:first-child,
+#resourceTimetableOutput table td:first-child {
+  white-space: nowrap;
+  width: 110px;
+  min-width: 110px;
+}
+
+table,
+th,
+td {
+  border: 1px solid #ddd;
+}
+
+th,
+td {
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+#timetableOutput {
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+#customizerOutput table {
+  background-color: #f2f2f2;
+  border: 1px solid #ddd;
+}
+
+#customizerOutput table th {
+  background-color: #e2e0e0;
+  border: 1px solid #ddd;
+}
+
+/* always show generator by default, hide customizer */
+.generator {
+  display: block;
+}
+
+.customizer {
+  display: none;
+}
+
+.upload-container {
+  border: 3px dashed #aaa;
+  border-radius: 10px;
+  width: 600px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background-color: #fff;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.upload-container.dragover {
+  background-color: #eef;
+  border-color: #33a;
+}
+
+.upload-container p {
+  margin: 0;
+  font-size: 16px;
+  color: #666;
+}
+
+#fileInput {
+  display: none;
+}
+
+.btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  background-color: #33a;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid black;
+  border-radius: 5px;
+  transition: 0.2s;
+}
+
+button:hover {
+  background-color: #2c3752;
+  color: white;
+}
+
+.editor {
+  display: none;
+}
+
+.output {
+  display: none;
+}
