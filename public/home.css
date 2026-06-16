@@ -73,8 +73,11 @@
     user-select: none;
     border: 0.2mm solid rgba(131, 131, 131, 0.5);
     transform-style: preserve-3d;
-    background-color: antiquewhite;
-    color: black;
+    /* background-color: antiquewhite; */
+    background: #062061b7;
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgb(255, 255, 255);
     padding: 10%;
 }
 
