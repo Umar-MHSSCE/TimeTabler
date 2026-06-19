@@ -177,12 +177,12 @@
 
         <!-- New Download Options -->
         <div id="download-options" style="margin-top:20px;">
-          <button onclick="downloadAsClassPDF()">Class Schedule - PDF</button>
-          <button onclick="downloadAsFacultyPDF()">Faculty Schedule - PDF</button>
-          <button onclick="downloadAsResourcePDF()">Resource Schedule - PDF</button>
+          <button onclick="downloadAsClassPDF()">Timetable - PDF</button>
           <button onclick="downloadAsWord()">Timetable - Word</button>
           <button onclick="downloadAsExcel()">Timetable - Excel</button>
           <button onclick="downloadAsJSON()">Save JSON file (For Editing)</button>
+          <button onclick="downloadAsFacultyPDF()">Faculty Schedule - PDF</button>
+          <button onclick="downloadAsResourcePDF()">Resource Schedule - PDF</button>
           <button id="editGeneratedTimetable"
             style="background-color: #4CAF50; color: white; margin-left: 10px;">Customize Timetable</button>
 
@@ -331,13 +331,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(editableData)
         });
-
-        if (!response.ok) {
-          throw new Error("Failed to save timetable");
-        }
-
+        const updated = await response.json();
+        generatedData = updated;
+        editableData = JSON.parse(JSON.stringify(updated));
+        sessionStorage.setItem('timetableData', JSON.stringify(updated)); // ← ADD
         alert("Timetable successfully updated.");
-        generatedData = JSON.parse(JSON.stringify(editableData)); // sync updated data
       } catch (error) {
         console.error(error);
         alert("An error occurred while saving the timetable.");
@@ -354,6 +352,7 @@
     let draggedCellId = null; // changed from draggedItem
     let isDirty = false;      // true only after at least one change is made
     let hasSaved = false;     // true once timetable has been saved at least once
+    let isCancelling = false; // guards against post-cancel blur firing on mobile
 
     function markDirty() {
       if (isDirty) return;
@@ -417,6 +416,7 @@
           try {
             const jsonData = JSON.parse(event.target.result);
             generatedData = jsonData;
+            sessionStorage.setItem('timetableData', JSON.stringify(jsonData));
             editableData = JSON.parse(JSON.stringify(jsonData));
             renderEditableTimetable(editableData);
             // Scroll to top so user sees the editor toolbar
@@ -430,6 +430,14 @@
     })();
 
     function renderEditableTimetable(data) {
+      // Detach any active contenteditable before wiping the DOM.
+      // Without this, destroying the focused node can fire a synthetic blur
+      // on some mobile browsers AFTER innerHTML = '' — which would hit the
+      // (now-stale) onCellTextEdit listener that was attached to the old node.
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+
       document.querySelector('.editor').style.display = 'block';
 
       // Reset toolbar to clean state — only Edit button visible
@@ -467,6 +475,14 @@
       }
 
       enableEditOptions();
+
+      // Safety net: always have a valid snapshot of "current loaded state"
+      // the moment data is rendered, not only when the Edit Timetable button
+      // is clicked. Previously this was only set inside the edit-btn click
+      // handler, so if the edit panel ever became visible without that click
+      // (e.g. a CSS rule forcing it open on mobile), originalSnapshot stayed
+      // null and Cancel had nothing to restore.
+      saveOriginalSnapshot();
     }
 
     function parseCellId(id) {
@@ -493,23 +509,23 @@
         cell.setAttribute('draggable', enableDrag);
         if (enableDrag) {
           // Desktop mouse
-          cell.ondragstart  = dragStart;
-          cell.ondrop       = drop;
-          cell.ondragover   = e => { e.preventDefault(); cell.classList.add('drag-over'); };
-          cell.ondragleave  = () => cell.classList.remove('drag-over');
+          cell.ondragstart = dragStart;
+          cell.ondrop = drop;
+          cell.ondragover = e => { e.preventDefault(); cell.classList.add('drag-over'); };
+          cell.ondragleave = () => cell.classList.remove('drag-over');
           // Mobile touch (2-second long-press to activate)
-          cell.ontouchstart  = touchStart;
-          cell.ontouchmove   = touchMove;
-          cell.ontouchend    = touchEnd;
+          cell.ontouchstart = touchStart;
+          cell.ontouchmove = touchMove;
+          cell.ontouchend = touchEnd;
           cell.ontouchcancel = touchCancel;
         } else {
-          cell.ondragstart   = null;
-          cell.ondrop        = null;
-          cell.ondragover    = null;
-          cell.ondragleave   = null;
-          cell.ontouchstart  = null;
-          cell.ontouchmove   = null;
-          cell.ontouchend    = null;
+          cell.ondragstart = null;
+          cell.ondrop = null;
+          cell.ondragover = null;
+          cell.ondragleave = null;
+          cell.ontouchstart = null;
+          cell.ontouchmove = null;
+          cell.ontouchend = null;
           cell.ontouchcancel = null;
         }
 
@@ -549,6 +565,10 @@
     document.getElementById('enableDelete').addEventListener('change', enableEditOptions);
 
     function onCellTextEdit(e) {
+      // On mobile, blur fires AFTER the cancel button tap has already restored
+      // the snapshot. Guard against that stale write overwriting the restored data.
+      if (isCancelling) return;
+
       const cell = e.currentTarget.closest('.editable-cell');
       const { className, day, index } = parseCellId(cell.id);
       const lines = e.currentTarget.innerText.trim().split('\n').map(line => line.trim());
@@ -625,21 +645,21 @@
     //   • All state is reset in a single cleanup() function called from both
     //     touchend and touchcancel — no orphaned ghosts or highlights.
 
-    const HOLD_MS   = 2000;   // 2 seconds hold to activate drag
+    const HOLD_MS = 2000;   // 2 seconds hold to activate drag
     const MOVE_SLOP = 10;     // px finger can drift before it counts as a scroll
 
-    let tdCellId     = null;   // id of cell being dragged
-    let tdGhost      = null;   // floating clone following finger
-    let tdHighlight  = null;   // cell currently highlighted as drop target
-    let tdTimer      = null;   // setTimeout handle
-    let tdLocked     = false;  // true once 2s hold completes
-    let tdStartX     = 0;      // finger X at touchstart
-    let tdStartY     = 0;      // finger Y at touchstart
-    let tdRing       = null;   // progress ring overlay on source cell
+    let tdCellId = null;   // id of cell being dragged
+    let tdGhost = null;   // floating clone following finger
+    let tdHighlight = null;   // cell currently highlighted as drop target
+    let tdTimer = null;   // setTimeout handle
+    let tdLocked = false;  // true once 2s hold completes
+    let tdStartX = 0;      // finger X at touchstart
+    let tdStartY = 0;      // finger Y at touchstart
+    let tdRing = null;   // progress ring overlay on source cell
 
     function touchStart(event) {
       if (event.touches.length !== 1) return;
-      const cell  = event.currentTarget;
+      const cell = event.currentTarget;
       const touch = event.touches[0];
 
       tdStartX = touch.clientX;
@@ -673,15 +693,15 @@
         if (tdRing) { tdRing.remove(); tdRing = null; }
 
         // Build ghost (appears AT the cell, then follows finger)
-        const rect  = cell.getBoundingClientRect();
+        const rect = cell.getBoundingClientRect();
         const ghost = cell.cloneNode(true);
         // Strip any inline style the clone might have copied
         ghost.removeAttribute('style');
         ghost.style.cssText = [
           'position:fixed',
-          'left:'   + rect.left   + 'px',
-          'top:'    + rect.top    + 'px',
-          'width:'  + rect.width  + 'px',
+          'left:' + rect.left + 'px',
+          'top:' + rect.top + 'px',
+          'width:' + rect.width + 'px',
           'height:' + rect.height + 'px',
           'opacity:0.80',
           'pointer-events:none',
@@ -723,8 +743,8 @@
 
       // Move ghost to centre on finger
       if (tdGhost) {
-        tdGhost.style.left = (touch.clientX - tdGhost.offsetWidth  / 2) + 'px';
-        tdGhost.style.top  = (touch.clientY - tdGhost.offsetHeight / 2) + 'px';
+        tdGhost.style.left = (touch.clientX - tdGhost.offsetWidth / 2) + 'px';
+        tdGhost.style.top = (touch.clientY - tdGhost.offsetHeight / 2) + 'px';
       }
 
       // Temporarily hide ghost to hit-test what's underneath
@@ -736,14 +756,14 @@
 
       // Clear old highlight
       if (tdHighlight && tdHighlight !== target) {
-        tdHighlight.style.outline    = '';
+        tdHighlight.style.outline = '';
         tdHighlight.style.background = '';
         tdHighlight = null;
       }
 
       // Apply new highlight
       if (target && target.id !== tdCellId) {
-        target.style.outline    = '2px dashed #4a90e2';
+        target.style.outline = '2px dashed #4a90e2';
         target.style.background = 'rgba(74,144,226,0.15)';
         tdHighlight = target;
       }
@@ -763,7 +783,7 @@
       if (tdGhost) { tdGhost.remove(); tdGhost = null; }
 
       // Find drop target
-      const el     = document.elementFromPoint(touch.clientX, touch.clientY);
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
       const target = el ? el.closest('.editable-cell') : null;
 
       if (target && target.id !== tdCellId) {
@@ -780,8 +800,8 @@
     function cleanupTouch() {
       clearTimeout(tdTimer);
 
-      if (tdGhost)     { tdGhost.remove(); }
-      if (tdRing)      { tdRing.remove(); }
+      if (tdGhost) { tdGhost.remove(); }
+      if (tdRing) { tdRing.remove(); }
       if (tdHighlight) { tdHighlight.style.outline = ''; tdHighlight.style.background = ''; }
 
       // Restore source cell appearance AND re-enable native scroll
@@ -794,12 +814,12 @@
         }
       }
 
-      tdCellId    = null;
-      tdGhost     = null;
+      tdCellId = null;
+      tdGhost = null;
       tdHighlight = null;
-      tdTimer     = null;
-      tdLocked    = false;
-      tdRing      = null;
+      tdTimer = null;
+      tdLocked = false;
+      tdRing = null;
     }
 
 
@@ -851,6 +871,7 @@
         const updated = await response.json();
         generatedData = updated;
         editableData = JSON.parse(JSON.stringify(updated));
+        sessionStorage.setItem('timetableData', JSON.stringify(updated));
         alert('Timetable saved! Now you can download the updated timetable or continue editing.');
       } catch (err) {
         alert('Error: ' + err.message);
@@ -869,12 +890,32 @@
     }
 
     document.getElementById('cancel-btn').addEventListener('click', () => {
+      // 1. Raise the flag FIRST so any blur event that fires immediately after
+      //    (mobile keyboards fire blur when the cancel button steals focus)
+      //    does NOT write stale edited text back into editableData.
+      isCancelling = true;
+
+      // 2. Force any focused contenteditable to lose focus NOW, before we
+      //    restore the snapshot. This flushes the pending blur synchronously
+      //    on desktop; on mobile the blur may still fire async, but the flag
+      //    above blocks it from doing damage.
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+
+      // 3. Restore the snapshot — editableData is clean again, DOM re-renders.
       restoreOriginalSnapshot();
+
       document.getElementById('editOptions').style.display = 'none';
       // Downloads stay visible if already saved, hidden otherwise
       if (!hasSaved) document.getElementById('toolbarDownloads').style.display = 'none';
       resetDirty();
       showCancelToast();
+
+      // 4. Lower the flag after a short tick — long enough to catch any
+      //    async blur that fires after the re-render, short enough not to
+      //    block legitimate edits on the restored timetable.
+      setTimeout(() => { isCancelling = false; }, 300);
     });
   </script>
 

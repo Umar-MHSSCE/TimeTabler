@@ -1,7 +1,6 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const fs = require('fs');
 const nodemailer = require("nodemailer");
 require('dotenv').config();
 const app = express();
@@ -24,44 +23,6 @@ const {
 
 app.use(express.json());
 
-// ----------------------
-// Session Management with Cleanup
-// ----------------------
-
-// Function to delete timetable file associated with a session
-function deleteTimetableFile(sessionID) {
-  const filename = `generated_timetable_${sessionID}.json`;
-  fs.unlink(filename, (err) => {
-    if (err && err.code !== 'ENOENT') {
-      console.error(`Error deleting timetable file ${filename}:`, err);
-    } else if (!err) {
-      // console.log(`Timetable file deleted: ${filename}`);
-    }
-  });
-}
-
-// Function to clean up old timetable files on server start
-function cleanupOldTimetables() {
-  fs.readdir(__dirname, (err, files) => {
-    if (err) {
-      console.error('Error reading directory for cleanup:', err);
-      return;
-    }
-    files.forEach(file => {
-      if (file.startsWith('generated_timetable_') && file.endsWith('.json')) {
-        const filePath = path.join(__dirname, file);
-        fs.unlink(filePath, (err) => {
-          if (!err) {
-            console.log(`Cleaned up old timetable file: ${file}`);
-          }
-        });
-      }
-    });
-  });
-}
-
-// Clean up old files on server start
-cleanupOldTimetables();
 
 const sessionMiddleware = session({
   secret: 'your-secret-key',
@@ -73,17 +34,6 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
-// Intercept session destroy to clean up files
-const sessionStore = sessionMiddleware.store || session.memoryStore;
-if (sessionStore && sessionStore.destroy) {
-  const originalDestroy = sessionStore.destroy.bind(sessionStore);
-  sessionStore.destroy = function (sessionID, callback) {
-    // Delete the timetable file when session is destroyed
-    deleteTimetableFile(sessionID);
-    // Call the original destroy method
-    originalDestroy(sessionID, callback || (() => { }));
-  };
-}
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landingpage.html'));
@@ -96,24 +46,9 @@ app.get('/workspace', (req, res) => {
 // Serve static files from the current directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-function getTimetableFilename(sessionID) {
-  return `generated_timetable_${sessionID}.json`;
-}
 
-function loadTimetableFromFile(sessionID) {
-  const filename = getTimetableFilename(sessionID);
-  if (fs.existsSync(filename)) {
-    return JSON.parse(fs.readFileSync(filename));
-  }
-  throw new Error('No timetable generated yet.');
-}
 
 // Logic moved to src/services/timetableService.js
-
-// ----------------------
-// Global variable for submitted data storage
-// ----------------------
-let submittedData = null;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -154,18 +89,7 @@ app.post("/submit_message", async (req, res) => {
 });
 
 
-// Endpoint to receive timetable input data from client
-app.post('/submitData', (req, res) => {
-  req.session.submittedData = req.body;
-  // console.log("Received Data:", req.session.submittedData);
-  res.json({ message: "Data submitted successfully!" });
-});
-
-// Endpoint to generate and return the timetable.
-app.get('/generateTimetable', (req, res) => {
-  if (!req.session.submittedData) {
-    return res.status(400).json({ error: "No data submitted yet." });
-  }
+app.post('/generateTimetable', (req, res) => {
 
   const {
     department,
@@ -183,7 +107,7 @@ app.get('/generateTimetable', (req, res) => {
     saturdayStartTime,
     saturdayEndTime,
     saturdayBreakTimes
-  } = req.session.submittedData;
+  } = req.body;
 
   let days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const slotTimings = generateSlotTimings(startTime, endTime, lectureDuration, breakTimes);
@@ -309,15 +233,6 @@ app.get('/generateTimetable', (req, res) => {
   // Store the generated timetable in session for download endpoints.
   req.session.generatedTimetable = output;
 
-  const filename = `generated_timetable_${req.sessionID}.json`;
-  fs.writeFile(filename, JSON.stringify(output, null, 2), err => {
-    if (err) {
-      console.error('Error writing timetable to file:', err);
-    } else {
-      // console.log(`Timetable successfully saved to ${filename}`);
-    }
-  });
-
   res.json(output);
 });
 
@@ -328,9 +243,9 @@ app.get('/generateTimetable', (req, res) => {
 // buildTableData moved to src/services/timetableService.js
 
 // PDF Download: Generate timetable tables in PDF.
-app.get('/download/pdf', (req, res) => {
+app.post('/download/pdf', (req, res) => {
   try {
-    const timetableData = loadTimetableFromFile(req.sessionID);
+    const timetableData = req.body;
     const type = req.query.type || 'class'; // 'class', 'faculty', 'resource'
 
     let tables = [];
@@ -427,9 +342,9 @@ app.get('/download/pdf', (req, res) => {
 
 
 // Word Download: Generate timetable tables in a Word document.
-app.get('/download/word', async (req, res) => {
+app.post('/download/word', async (req, res) => {
   try {
-    const timetableData = loadTimetableFromFile(req.sessionID);
+    const timetableData = req.body;
     const tables = buildTableData(timetableData.timetable);
 
     const children = [
@@ -475,9 +390,9 @@ app.get('/download/word', async (req, res) => {
 
 
 // Excel Download: Generate timetable tables in Excel.
-app.get('/download/excel', async (req, res) => {
+app.post('/download/excel', async (req, res) => {
   try {
-    const timetableData = loadTimetableFromFile(req.sessionID);
+    const timetableData = req.body;
     const tables = buildTableData(timetableData.timetable);
 
     const workbook = new ExcelJS.Workbook();
@@ -532,9 +447,9 @@ app.get('/download/excel', async (req, res) => {
 });
 
 
-app.get('/download/json', (req, res) => {
+app.post('/download/json', (req, res) => {
   try {
-    const timetableData = loadTimetableFromFile(req.sessionID);
+    const timetableData = req.body;
 
     const jsonBuffer = Buffer.from(JSON.stringify(timetableData, null, 2));
 
@@ -546,35 +461,10 @@ app.get('/download/json', (req, res) => {
   }
 });
 
-// ----------------------
-// Session Cleanup Endpoint
-// ----------------------
-
-// Endpoint to explicitly end session and delete generated timetable
-// Handles both regular fetch requests and navigator.sendBeacon requests
-app.post('/endSession', (req, res) => {
-  const sessionID = req.sessionID;
-
-  // Delete the timetable file immediately
-  deleteTimetableFile(sessionID);
-
-  // Destroy the session (non-blocking)
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-    }
-  });
-
-  // Send quick response
-  res.status(200).send('OK');
-});
 
 // Endpoint to get current session ID (for debugging/verification)
 app.get('/sessionInfo', (req, res) => {
-  res.json({
-    sessionID: req.sessionID,
-    timetableFile: `generated_timetable_${req.sessionID}.json`
-  });
+  res.json({ sessionID: req.sessionID });
 });
 
 // Regenerate from uploaded/edited JSON settings
@@ -666,11 +556,7 @@ app.post('/updateTimetable', (req, res) => {
 
     // ✅ Store the manually edited timetable with updated derived tables
     req.session.generatedTimetable = settings;
-
-    // ✅ Save to file without regenerating
-    const filename = `generated_timetable_${req.sessionID}.json`;
-    fs.writeFileSync(filename, JSON.stringify(settings, null, 2));
-
+    
     res.json(settings);
   } catch (err) {
     console.error("Save failed:", err);
@@ -679,53 +565,7 @@ app.post('/updateTimetable', (req, res) => {
 });
 
 
-// ----------------------
-// Periodic Cleanup Function
-// ----------------------
-function performPeriodicCleanup() {
-  fs.readdir(__dirname, (err, files) => {
-    if (err) {
-      console.error('Error reading directory for cleanup:', err);
-      return;
-    }
-
-    files.forEach(file => {
-      if (file.startsWith('generated_timetable_') && file.endsWith('.json')) {
-        // Extract session ID from filename
-        // Format: generated_timetable_{sessionID}.json
-        const sessionID = file.replace('generated_timetable_', '').replace('.json', '');
-
-        // Check if this session still exists in the session store
-        const sessionStore = sessionMiddleware.store;
-
-        if (sessionStore && sessionStore.get) {
-          sessionStore.get(sessionID, (err, session) => {
-            // If session doesn't exist (error or null), delete the file
-            if (err || !session) {
-              const filePath = path.join(__dirname, file);
-              fs.unlink(filePath, (err) => {
-                if (!err) {
-                  console.log(`Cleanup: Deleted orphaned timetable file for expired session ${sessionID}`);
-                } else if (err.code !== 'ENOENT') {
-                  console.error(`Error deleting file ${file}:`, err);
-                }
-              });
-            }
-          });
-        }
-      }
-    });
-  });
-}
-
 // Final step: server start
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-
-  // Run cleanup every 15 minutes to check for orphaned files from dead sessions
-  // Only deletes files whose sessions no longer exist in the session store
-  setInterval(performPeriodicCleanup, 15 * 60 * 1000);
-
-  // Also run cleanup on startup
-  performPeriodicCleanup();
 });

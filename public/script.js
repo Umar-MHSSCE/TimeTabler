@@ -109,6 +109,20 @@ let isSubmitted = false;
 // Global variable to store generated data for later use
 window.generatedData = null;
 
+// Refresh/close/navigate karne se pehle browser ka built-in confirmation dikhao,
+// taaki user accidentally generated timetable na khoye (refresh karte hi sab data ud jata hai).
+// NOTE: Modern browsers (Chrome, Firefox, Safari) security reasons se custom text allow
+// nahi karte beforeunload dialog mein — woh apna generic "Leave site? Changes you made
+// may not be saved." wala message hi dikhayenge, lekin Cancel/Leave (ya Cancel/Reload)
+// ka confirm-or-stay behaviour bilkul kaam karega, browser khud handle karta hai.
+window.addEventListener('beforeunload', function (e) {
+  if (window.generatedData) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
 // Prevent accidental browser step changes on numeric inputs.
 document.querySelectorAll('input[type="number"]').forEach((input) => {
   input.addEventListener('wheel', (event) => {
@@ -231,33 +245,24 @@ document.getElementById('timetableForm').addEventListener('submit', async functi
     window.timetableSettings.saturdayBreakTimes = saturdayBreakTimes;
   }
 
-  // console.log("Final Form Data:", formData);
-
-  // Submit the data to the server endpoint /submitData
+  // ─── CHANGED: Single POST to /generateTimetable (no more /submitData separately) ───
+  // Pehle do alag fetch calls the:
+  //   1. POST /submitData  → session mein data save karta tha
+  //   2. GET  /generateTimetable → session se data padh ke timetable banata tha
+  // Vercel pe session share nahi hoti different containers mein, isliye fail hota tha.
+  // Ab: ek hi POST call mein formData seedha /generateTimetable ko bhej do.
   try {
-    const response = await fetch('/submitData', {
+    const response = await fetch('/generateTimetable', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
     });
     if (!response.ok) {
-      throw new Error("Failed to submit data");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Error submitting data to server.");
-    return;
-  }
-
-  // Fetch the generated timetable from the server
-  try {
-    const response = await fetch('/generateTimetable');
-    if (!response.ok) {
-      throw new Error("Failed to fetch timetable");
+      throw new Error("Failed to generate timetable");
     }
     const data = await response.json();
-    // Store the fetched data globally for later use.
     window.generatedData = data;
+    sessionStorage.setItem('timetableData', JSON.stringify(data));
     renderTimetable(data);
     document.getElementById("timetableOutput").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
@@ -265,6 +270,7 @@ document.getElementById('timetableForm').addEventListener('submit', async functi
     alert("Error generating timetable.");
     return;
   }
+  // ─────────────────────────────────────────────────────────────────────────────────
 
   isSubmitted = true;
   document.getElementById('generateButton').value = "Regenerate";
@@ -546,113 +552,101 @@ document.getElementById('displayResourceTimetable').addEventListener('click', ()
 });
 
 // --- Download Functions ---
-// --- Download Functions ---
+function getTimetableDataForDownload() {
+  return window.generatedData || JSON.parse(sessionStorage.getItem('timetableData'));
+}
+
 function downloadAsClassPDF() {
-  fetch('/download/pdf?type=class')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'class_timetable.pdf';
-      a.click();
-    });
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/pdf?type=class', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'class_timetable.pdf';
+    a.click();
+  });
 }
 
 function downloadAsFacultyPDF() {
-  fetch('/download/pdf?type=faculty')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'faculty_timetable.pdf';
-      a.click();
-    });
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/pdf?type=faculty', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'faculty_timetable.pdf';
+    a.click();
+  });
 }
 
 function downloadAsResourcePDF() {
-  fetch('/download/pdf?type=resource')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'resource_timetable.pdf';
-      a.click();
-    });
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/pdf?type=resource', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'resource_timetable.pdf';
+    a.click();
+  });
+}
+
+function downloadAsWord() {
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/word', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'timetable.docx';
+    a.click();
+  });
+}
+
+function downloadAsExcel() {
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/excel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'timetable.xlsx';
+    a.click();
+  });
+}
+
+function downloadAsJSON() {
+  const data = getTimetableDataForDownload();
+  if (!data) return alert('No timetable found.');
+  fetch('/download/json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'timetable.json';
+    a.click();
+  });
 }
 
 // For backward compatibility with Customizer button if not updated
 function downloadAsPDF() {
   downloadAsClassPDF();
 }
-
-function downloadAsWord() {
-  fetch('/download/word')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'timetable.docx';
-      a.click();
-    });
-}
-
-function downloadAsExcel() {
-  fetch('/download/excel')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'timetable.xlsx';
-      a.click();
-    });
-}
-
-function downloadAsJSON() {
-  fetch('/download/json')
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'timetable.json';
-      a.click();
-    });
-}
-
-// ----------------------
-// Automatic Session Cleanup
-// ----------------------
-// Delete generated timetables when user leaves the page
-
-let isFormSubmitting = false;
-
-// Flag when form is being submitted
-document.getElementById('timetableForm').addEventListener('submit', function() {
-  isFormSubmitting = true;
-});
-
-// Cleanup when user closes the tab or navigates away
-window.addEventListener('beforeunload', function(event) {
-  // Don't cleanup if form is actively submitting
-  if (isFormSubmitting) {
-    return;
-  }
-  
-  // Send cleanup request with keepalive to ensure it completes even if page is closing
-  navigator.sendBeacon('/endSession', new Blob());
-});
-
-// Also cleanup if user clicks on back button or navigates to another page
-window.addEventListener('pagehide', function() {
-  // Don't cleanup if form is actively submitting
-  if (isFormSubmitting) {
-    return;
-  }
-  
-  navigator.sendBeacon('/endSession', new Blob());
-});

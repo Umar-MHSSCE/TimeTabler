@@ -363,7 +363,11 @@
 
 /* ─── 10. CUSTOMIZER — EDITOR CONTROLS ───────────────────────*/
 @media (max-width: 768px) {
-    #editOptions {
+    /* JS controls visibility via inline display:none/block — only force the
+       flex layout when it is actually meant to be shown, same pattern as
+       .toolbar-downloads below. Without this guard, !important overrides the
+       JS's display:none and the panel stays visibly open even when closed. */
+    #editOptions:not([style*="display: none"]):not([style*="display:none"]) {
         display: flex !important;
         flex-direction: column !important;
         gap: 10px;

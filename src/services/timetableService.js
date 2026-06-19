@@ -420,7 +420,7 @@ function deriveDerivedTimetables(classTimetable, faculties, numberOfRooms, numbe
     });
 
     const resourceTimetable = {};
-    const rooms = Array.from({ length: numberOfRooms }, (_, i) => `Room${i + 1}`);
+    const rooms = Array.from({ length: numberOfRooms }, (_, i) => `Classroom${i + 1}`);
     const labs = Array.from({ length: numberOfLabs }, (_, i) => `Lab${i + 1}`);
 
     // Initialize resource entries

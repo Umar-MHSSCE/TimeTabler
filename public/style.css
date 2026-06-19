@@ -7,7 +7,7 @@
 body {
     background-image: url(Assets/bg14.png);
     background-size: cover;
-    padding: 50px 70px 50px 70px;
+    padding: 25px 70px 50px 70px;
     background-attachment: fixed;
     overflow-x: hidden;
     background-position: bottom right;
@@ -40,7 +40,7 @@ nav>div {
     padding-bottom: 15px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content:space-between;
 }
 
 nav>div h1 {
@@ -124,7 +124,7 @@ nav>div h1 {
 .letter span {
     display: block;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 110px;
+    font-size: 90px;
     font-weight: 800;
 }
 
@@ -149,12 +149,16 @@ nav>div h1 {
 
 #text1 {
     top: 5%;
-    left: 6%;
+    left: 4%;
+    /* top: 5%;
+    left: 6%; */
     /* font-size: 60px;  */
 }
 
 #text2 {
     top: 8.25%;
-    left: 10%;
+    left: 8%;
+    /* top: 8.25%;
+    left: 10%; */
     /* font-size: 90px; */
 }

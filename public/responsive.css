@@ -27,22 +27,21 @@
     }
 
     nav > div {
-        flex-wrap: wrap;
-        gap: 8px;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 10px !important;
         padding: 10px 12px;
     }
 
     nav > div h1 {
         font-size: 20px;
+        flex: 0 0 auto !important;
+        text-align: left;
     }
 
-    #signup-btn,
-    #login-btn {
-        position: static !important;
-        right: auto !important;
-        padding: 5px 12px !important;
-        font-size: 13px;
-        border-radius: 8px;
+    #register-btn {
+        flex: 0 0 auto !important;
     }
 }
 
@@ -137,7 +136,28 @@
 
 /* ─── 4. HOME PAGE ─── */
 
-/* 4a. 3D cube */
+/* ══════════════════════════════════════════════════════════════
+   responsive_patch_v3.css
+   In responsive.css, replace the old "4a. 3D cube" block
+   (and any old cube mobile/tablet rules) with this entire file.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── 4a. Timetable hero — tablet (769–1150px) ─────────────── */
+@media (min-width: 769px) and (max-width: 1150px) {
+    .tt-hero-card {
+        width: 380px !important;
+    }
+    .tt-hero-table th,
+    .tt-hero-table td         { font-size: 8px !important; }
+    .tt-hero-table th.th-time,
+    .tt-hero-table td.tt-td-time { width: 52px !important; font-size: 7.5px !important; }
+    .tt-hero-table td         { height: 44px !important; }
+    .tt-cell-subj              { font-size: 8px !important; }
+    .tt-cell-venue,
+    .tt-cell-fac               { font-size: 6.5px !important; }
+}
+
+/* ─── 4a. Timetable hero — mobile (≤768px) ─────────────────── */
 @media (max-width: 768px) {
     #home-main {
         position: relative;
@@ -145,52 +165,67 @@
         overflow: hidden;
     }
 
-    .cube-section {
+    /* On mobile: no 3D tilt — flat layout is safer and cleaner.
+       The section becomes a horizontal scroller so the card can
+       keep a readable size instead of being squeezed to fit. */
+    .tt-hero-section {
         position: relative !important;
         right: auto !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        perspective: none !important;
         width: 100%;
         display: flex;
-        justify-content: center;
-        padding-top: 24px;
-        margin-bottom: 24px;
+        justify-content: flex-start;
+        padding: 18px 0 18px 16px;
+        margin-bottom: 18px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
     }
 
-    .cube-container {
-        width: 340px !important;
-        height: 340px !important;
-        perspective: 900px !important;
+    .tt-hero-tilt {
+        transform: none !important;
+        flex-shrink: 0;
+        scroll-snap-align: start;
+        margin-right: 16px;
     }
 
-    /* face = 220px → translateZ = 110px */
-    .cube {
-        width: 220px !important;
-        height: 220px !important;
+    /* Keep the card close to its natural desktop size so text stays
+       readable — it scrolls horizontally rather than shrinking. */
+    .tt-hero-card {
+        width: 520px !important;
+        max-width: none !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 24px rgba(6, 32, 97, 0.12) !important;
     }
 
-    .front  { transform: rotateY(0deg)    translateZ(110px) !important; }
-    .back   { transform: rotateY(180deg)  translateZ(110px) !important; }
-    .left   { transform: rotateY(-90deg)  translateZ(110px) !important; }
-    .right  { transform: rotateY(90deg)   translateZ(110px) !important; }
-    .top    { transform: rotateX(90deg)   translateZ(110px) !important; }
-    .bottom { transform: rotateX(-90deg)  translateZ(110px) !important; }
+    .tt-hero-topbar         { padding: 9px 13px !important; }
+    .tt-hero-topbar-title   { font-size: 10px !important; }
 
-    .side {
-        width: 220px !important;
-        height: 220px !important;
-        padding: 14px !important;
-    }
+    .tt-hero-table th,
+    .tt-hero-table td         { font-size: 9px !important; }
+    .tt-hero-table th.th-time,
+    .tt-hero-table td.tt-td-time { width: 54px !important; font-size: 8.5px !important; }
+    .tt-hero-table td         { height: 66px !important; }
 
-    .side h3 {
-        font-size: 14px !important;
-        line-height: 1.45;
-    }
+    .tt-cell-subj  { font-size: 9px !important; }
+    .tt-cell-venue,
+    .tt-cell-fac   { font-size: 7px !important; }
 
-    /* On mobile there's no hover, so the CSS animation-none rule
-       (.cube-container:hover .cube) never fires accidentally.
-       Touch logic is handled entirely in the updated home.js. */
-    .cube-container:hover .cube {
-        animation: rotate-cube 30s ease-in-out infinite !important;
-    }
+    .tt-hero-footer { padding: 8px 13px 10px !important; }
+    .tt-hero-status { font-size: 10px !important; }
+    .tt-hero-badge  { font-size: 10px !important; }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .tt-hero-table td.tt-placed { animation: none !important; opacity: 1 !important; }
+    .tt-shimmer-layer            { animation: none !important; }
+    .tt-hero-status::before      { animation: none !important; }
+    .tt-hero-tilt                { transform: none !important; }
 }
 
 /* 4b. 3D "TIMETABLER" text — decorative only, hide on mobile */
@@ -207,11 +242,21 @@
         top: auto !important;
         left: auto !important;
         transform: none !important;
-        display: block;
-        margin: 24px auto 0 auto;
-        width: 200px !important;
-        height: 52px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        height: 34px !important;
+        padding: 0 14px !important;
+        border-radius: 14px !important;
         animation: register-mobile 5s ease-in-out infinite;
+    }
+
+    #register-btn .text-btn {
+        font-size: 15px !important;
+        font-weight: 700 !important;
     }
 
     @keyframes register-mobile {

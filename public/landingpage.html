@@ -12,6 +12,7 @@
 
     <link rel="stylesheet" href="style.css">
     <script src="home.js"></script>
+    <script src="tt_hero.js"></script>
     <link rel="stylesheet" href="home.css">
     <script src="faqs.js"></script>
     <link rel="stylesheet" href="faqs.css">
@@ -66,9 +67,30 @@
             transition: 0.25s;
         }
 
+        .start-btn>a {
+            border-radius: 20px;
+        }
+
+        .start-btn {
+            border-radius: 20px;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        .start-btn:active {
+            transform: scale(0.97);
+            background-color: #cccccc;
+        }
+
+        #register-btn:active {
+            border-color: #062061;
+        }
+
         .text-btn {
             z-index: 1;
             position: relative;
+            border-radius: 20px;
         }
 
         .wave {
@@ -97,44 +119,29 @@
             }
         }
 
-        #signup-btn {
-            position: absolute;
-            border-radius: 10px;
-            padding: 6px 18px 6px 18px;
-            right: 16%;
-        }
-
-        #login-btn {
-            position: absolute;
-            border-radius: 10px;
-            padding: 6px 18px 6px 18px;
-            right: 6%;
-        }
 
         #register-btn {
             position: relative;
+            flex-shrink: 0;
             border-radius: 20px;
-            top: 450px;
             padding: 5px 15px 5px 15px;
-            width: 250px;
-            height: 60px;
-            left: 50%;
-            /* transform: translateX(-50%); */
+            width: 200px;
+            height: 50px;
             animation: register 5s ease-in-out infinite;
             border: 0.5px solid white;
         }
 
         @keyframes register {
             0% {
-                transform: translateX(-50%) scale(1);
+                transform: scale(1);
             }
 
             50% {
-                transform: translateX(-50%) scale(1.1);
+                transform: scale(1.1);
             }
 
             100% {
-                transform: translateX(-50%) scale(1);
+                transform: scale(1);
             }
         }
 
@@ -198,7 +205,14 @@
         <nav>
             <div>
                 <h1>TimeTabler</h1>
+                <button id="register-btn" class="start-btn">
+                    <div class="text-btn" style="color: #000000;font-size: 24px; font-weight: bolder; "><a
+                            href="/workspace" style="text-decoration: none; color: #000000;">Get Started!</a>
+                    </div>
+                    <div class="wave"></div>
+                </button>
             </div>
+
         </nav>
     </header>
 
@@ -222,27 +236,42 @@
 
                 <div class="main" id="home-main">
 
-                    <div class="cube-section">
-                        <div class="cube-container">
-                            <div class="cube">
-                                <div class="side front">
-                                    <h3>Automatically Generate Your Ideal Timetable—No Hassle, Just Results!</h3>
+                    <div class="tt-hero-section" id="ttHeroSection">
+                        <div class="tt-hero-tilt">
+                            <div class="tt-hero-card">
+
+                                <!-- macOS-style window chrome -->
+                                <div class="tt-hero-topbar">
+                                    <div class="tt-hero-dot" style="background:#ff5f57;"></div>
+                                    <div class="tt-hero-dot" style="background:#ffbd2e;"></div>
+                                    <div class="tt-hero-dot" style="background:#28c840;"></div>
+                                    <span class="tt-hero-topbar-title">
+                                        TimeTabler &nbsp;&middot;&nbsp; COMPUTER &nbsp;&middot;&nbsp; Second Year
+                                    </span>
                                 </div>
-                                <div class="side back">
-                                    <h3>Your Timetable, Your Way—Personalize Every Detail!</h3>
+
+                                <!-- Timetable grid — JS fills rows dynamically -->
+                                <table class="tt-hero-table" id="ttHeroTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="th-time">Time</th>
+                                            <th>Mon</th>
+                                            <th>Tue</th>
+                                            <th>Wed</th>
+                                            <th>Thu</th>
+                                            <th>Fri</th>
+                                            <th>Sat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ttHeroBody"></tbody>
+                                </table>
+
+                                <!-- Footer -->
+                                <div class="tt-hero-footer">
+                                    <span class="tt-hero-status" id="ttHeroStatus">Initializing schedule&hellip;</span>
+                                    <span class="tt-hero-badge" id="ttHeroBadge">&#10003; Timetable generated!</span>
                                 </div>
-                                <div class="side left">
-                                    <h3>Stay on Track—We Adjust Your Timetable for Absences!</h3>
-                                </div>
-                                <div class="side right">
-                                    <h3>Take Your Schedule Anywhere—Download and Go!</h3>
-                                </div>
-                                <div class="side top">
-                                    <h3>Your Timetable, Safeguarded: Access and Modify Anytime, Anywhere!</h3>
-                                </div>
-                                <div class="side bottom">
-                                    <h3>Input Made Easy: Tailor Your Timetable with Just a Few Clicks</h3>
-                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -287,13 +316,6 @@
                         </div>
                     </div>
 
-                    <button id="register-btn" class="start-btn">
-                        <div class="text-btn" style="color: #f80707;font-size: 30px; font-weight: bolder; "><a href="/workspace"
-                            style="text-decoration: none; color: #000000;">Get Started!</a>
-                        </div>
-                        <div class="wave"></div>
-                    </button>
-
                     <section id="how-it-works">
                         <div class="steps">
                             <div class="step">
@@ -323,7 +345,8 @@
                             <img src="Assets/download and customize.png" alt="download-image" width="40%">
                             <div class="step">
                                 <h2>Step 4: Download and Save</h2>
-                                <p>Download your timetable as PDF, Excel, or JSON format. Save the JSON file to edit your timetable later by uploading it back to the generator.</p>
+                                <p>Download your timetable as PDF, Excel, or JSON format. Save the JSON file to edit
+                                    your timetable later by uploading it back to the generator.</p>
                             </div>
                         </div>
 
@@ -420,13 +443,18 @@
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Can I customize my generated
                                     timetable?
                                 </h3>
-                                <p>Yes! During your current session, you can edit and customize your timetable in the Customizer mode—adjust timings, swap classes, and make any changes you need. Your customized version is saved on the server and can be downloaded in JSON format to keep for future edits.</p>
+                                <p>Yes! During your current session, you can edit and customize your timetable in the
+                                    Customizer mode—adjust timings, swap classes, and make any changes you need. Your
+                                    customized version is saved on the server and can be downloaded in JSON format to
+                                    keep for future edits.</p>
                             </div>
 
                             <div class="Question">
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Is it possible to download the
                                     timetables?</h3>
-                                <p>Absolutely! You can download your timetables in three formats: PDF for printing and sharing, Excel for spreadsheet use, and JSON for future editing. Simply upload the JSON file anytime to make further changes to your timetable.</p>
+                                <p>Absolutely! You can download your timetables in three formats: PDF for printing and
+                                    sharing, Excel for spreadsheet use, and JSON for future editing. Simply upload the
+                                    JSON file anytime to make further changes to your timetable.</p>
                             </div>
 
                             <div class="Question">
@@ -440,7 +468,9 @@
                             <div class="Question">
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;Do I need to sign up to use
                                     TimeTabler?</h3>
-                                <p>No! TimeTabler is completely open and free for everyone to use. Simply click "Get Started" and begin generating your timetables right away—no sign up or login required!</p>
+                                <p>No! TimeTabler is completely open and free for everyone to use. Simply click "Get
+                                    Started" and begin generating your timetables right away—no sign up or login
+                                    required!</p>
                             </div>
 
                             <div class="Question">
@@ -484,7 +514,10 @@
                             <div class="Question">
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How can I access my saved timetables?
                                 </h3>
-                                <p>Your timetables are stored on our server during your session. To access and edit a timetable later, download the JSON file when you're done. Simply upload this JSON file back to the generator anytime to load and continue editing your saved timetable.</p>
+                                <p>Your timetables are stored on our server during your session. To access and edit a
+                                    timetable later, download the JSON file when you're done. Simply upload this JSON
+                                    file back to the generator anytime to load and continue editing your saved
+                                    timetable.</p>
                             </div>
 
                             <div class="Question">
@@ -497,13 +530,20 @@
                             <div class="Question">
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How often can I edit or regenerate a
                                     timetable?</h3>
-                                <p>During your current session, you can edit and regenerate your timetable unlimited times without any restrictions. To continue editing a saved timetable later, download it as a JSON file and upload it back to the generator whenever you need to make changes.</p>
+                                <p>During your current session, you can edit and regenerate your timetable unlimited
+                                    times without any restrictions. To continue editing a saved timetable later,
+                                    download it as a JSON file and upload it back to the generator whenever you need to
+                                    make changes.</p>
                             </div>
 
                             <div class="Question">
                                 <h3><i class="fa-solid fa-angles-right"></i>&nbsp;How secure is my data on TimeTabler?
                                 </h3>
-                                <p>Your data remains completely in your control. We don't collect or store any personal information. During your session, timetables are stored on our server for your convenience. To ensure your data security, download the JSON file of your completed timetables—once you close your session or clear your browser, you can always reload them by uploading the JSON file again.</p>
+                                <p>Your data remains completely in your control. We don't collect or store any personal
+                                    information. During your session, timetables are stored on our server for your
+                                    convenience. To ensure your data security, download the JSON file of your completed
+                                    timetables—once you close your session or clear your browser, you can always reload
+                                    them by uploading the JSON file again.</p>
                             </div>
 
 
@@ -532,7 +572,10 @@
                                 <i class="fa-brands fa-linkedin" style="color: #062061; font-size: 35px;"></i>
                                 <div>
                                     <h4 style="font-size: 30px;">LinkedIn</h4>
-                                    <p style="font-size: 24px;"><a href="https://www.linkedin.com/in/umar-farooque-ansari?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" style="text-decoration: underline; color: #2a407d;">Connect With Me</a></p>
+                                    <p style="font-size: 24px;"><a
+                                            href="https://www.linkedin.com/in/umar-farooque-ansari?utm_source=share_via&utm_content=profile&utm_medium=member_android"
+                                            target="_blank" style="text-decoration: underline; color: #2a407d;">Connect
+                                            With Me</a></p>
                                 </div>
                             </div>
 
@@ -540,7 +583,8 @@
                                 <i class="fa-brands fa-github" style="color: #062061; font-size: 35px;"></i>
                                 <div>
                                     <h4 style="font-size: 30px;">GitHub</h4>
-                                    <p style="font-size: 24px;"><a href="https://github.com/Umar-MHSSCE" target="_blank" style="text-decoration: underline; color: #2a407d;">View My Profile</a></p>
+                                    <p style="font-size: 24px;"><a href="https://github.com/Umar-MHSSCE" target="_blank"
+                                            style="text-decoration: underline; color: #2a407d;">View My Profile</a></p>
                                 </div>
                             </div>
 
