@@ -150,10 +150,15 @@
               Number of Classrooms Available (for theory lectures):
               <input type="number" name="numberOfRooms" required>
             </label>
-            <label>
-              Number of Labs Available (for practical lectures):
-              <input type="number" name="numberOfLabs" required>
-            </label>
+            <!-- Labs Configuration -->
+            <div id="labsConfigSection">
+              <p class="labs-section-title">Labs Available (for practical lectures):</p>
+              <p class="labs-section-hint">
+                Add each lab. Assign subjects that can <em>only</em> go in that lab — leave a lab unassigned to let it accept any remaining practical subject automatically.
+              </p>
+              <div id="labsContainer"></div>
+              <button type="button" id="addLabBtn">+ Add Lab</button>
+            </div>
           </div>
           <!-- Final Submit Button -->
           <input type="submit" id="generateButton" value="Generate">
@@ -241,6 +246,18 @@
             <div id="dragHint" class="drag-hint" style="display:none;">
               <span class="drag-hint-icon">☝</span>
               <span>Desktop: drag a cell onto another to swap. &nbsp;|&nbsp; Mobile: hold 2 s then drag.</span>
+            </div>
+
+            <!-- Find & Replace panel (shown when Edit Text is enabled) -->
+            <div id="findReplacePanel" style="display:none; margin-top: 10px; padding: 10px 14px; background: rgba(255,255,255,0.7); border: 1px solid #2c3752; border-radius: 8px; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size:0.88rem; font-weight:600; color:#2c3752; white-space:nowrap;">🔍 Find &amp; Replace:</span>
+              <input type="text" id="findInput" placeholder="Find text..." style="padding:5px 8px; border-radius:5px; border:1px solid #999; font-size:0.88rem; min-width:130px; flex:1;">
+              <input type="text" id="replaceInput" placeholder="Replace with..." style="padding:5px 8px; border-radius:5px; border:1px solid #999; font-size:0.88rem; min-width:130px; flex:1;">
+              <div style="display:flex; gap:8px; width:100%; flex-wrap:nowrap;">
+                <button type="button" id="replaceAllBtn" style="padding:5px 14px; background:#2c3752; color:#fff; border:none; border-radius:5px; font-size:0.88rem; cursor:pointer; white-space:nowrap; flex:1;">Replace All</button>
+                <button type="button" id="clearFindBtn" title="Clear highlights" style="padding:5px 10px; background:#fff; border:1px solid #bbb; border-radius:5px; font-size:0.88rem; cursor:pointer; white-space:nowrap; color:#555; flex:0 0 auto;">✕ Clear</button>
+              </div>
+              <span id="replaceStatus" style="font-size:0.82rem; width:100%; margin-top:2px;"></span>
             </div>
 
             <div id="actionButtons" class="action-row">
@@ -557,6 +574,195 @@
     }
 
     document.getElementById('editText').addEventListener('change', enableEditOptions);
+    document.getElementById('editText').addEventListener('change', function () {
+      const panel = document.getElementById('findReplacePanel');
+      panel.style.display = this.checked ? 'flex' : 'none';
+      if (!this.checked) {
+        clearFindHighlights();
+        document.getElementById('replaceStatus').textContent = '';
+      }
+    });
+
+    // ── Find & Replace helpers ──────────────────────────────────────────────
+
+    // Strip any existing highlight spans from a cell's content div
+    function stripHighlights(contentEl) {
+      contentEl.querySelectorAll('.fr-highlight, .fr-replaced').forEach(span => {
+        span.replaceWith(document.createTextNode(span.textContent));
+      });
+      contentEl.normalize();
+    }
+
+    // Remove all highlights from every cell and reset dim state
+    function clearFindHighlights() {
+      document.querySelectorAll('.editable-cell').forEach(cell => {
+        const c = cell.querySelector('.lecture-content');
+        if (c) stripHighlights(c);
+        cell.classList.remove('fr-dim');
+      });
+    }
+
+    // Wrap every occurrence of `term` inside a text node with a <span class=cls>
+    function highlightTextNode(textNode, term, cls) {
+      const parent = textNode.parentNode;
+      const text = textNode.textContent;
+      const lower = text.toLowerCase();
+      const termLower = term.toLowerCase();
+      let idx = lower.indexOf(termLower);
+      if (idx === -1) return false;
+
+      const frag = document.createDocumentFragment();
+      let last = 0;
+      while (idx !== -1) {
+        if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text.slice(idx, idx + term.length);
+        frag.appendChild(span);
+        last = idx + term.length;
+        idx = lower.indexOf(termLower, last);
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      parent.replaceChild(frag, textNode);
+      return true;
+    }
+
+    // Walk all text nodes inside an element and highlight matches
+    function highlightInElement(el, term, cls) {
+      let found = false;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+        acceptNode: n => n.parentElement.closest('.fr-highlight, .fr-replaced')
+          ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+      });
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(n => { if (highlightTextNode(n, term, cls)) found = true; });
+      return found;
+    }
+
+    // Live highlight as user types in Find box
+    document.getElementById('findInput').addEventListener('input', function () {
+      const term = this.value.trim();
+      const status = document.getElementById('replaceStatus');
+      clearFindHighlights();
+      status.textContent = '';
+      if (!term) return;
+
+      let matchCount = 0;
+      let cellsWithMatch = new Set();
+
+      document.querySelectorAll('.editable-cell').forEach(cell => {
+        const c = cell.querySelector('.lecture-content');
+        if (!c) return;
+        const found = highlightInElement(c, term, 'fr-highlight');
+        if (found) {
+          matchCount += c.querySelectorAll('.fr-highlight').length;
+          cellsWithMatch.add(cell);
+        }
+      });
+
+      // Dim cells that have no match
+      document.querySelectorAll('.editable-cell').forEach(cell => {
+        if (cellsWithMatch.has(cell)) {
+          cell.classList.remove('fr-dim');
+        } else {
+          cell.classList.add('fr-dim');
+        }
+      });
+
+      if (matchCount > 0) {
+        status.textContent = `${matchCount} match${matchCount > 1 ? 'es' : ''} found`;
+        status.style.color = '#2c7a2c';
+      } else {
+        status.textContent = 'No matches found';
+        status.style.color = '#c33';
+      }
+    });
+
+    // Replace All — updates data model + DOM, flashes replaced cells green
+    document.getElementById('replaceAllBtn').addEventListener('click', function () {
+      const findVal = document.getElementById('findInput').value;
+      const replaceVal = document.getElementById('replaceInput').value;
+      const status = document.getElementById('replaceStatus');
+      if (!findVal) { status.textContent = 'Enter text to find.'; status.style.color = '#c33'; return; }
+      if (!editableData) { status.textContent = 'No timetable loaded.'; status.style.color = '#c33'; return; }
+
+      // Clear visual highlights first
+      clearFindHighlights();
+      document.querySelectorAll('.editable-cell').forEach(c => c.classList.remove('fr-dim'));
+
+      let count = 0;
+      const replacedCells = new Set();
+      const timetable = editableData.timetable;
+
+      for (const cls in timetable) {
+        for (const day in timetable[cls]) {
+          timetable[cls][day].forEach((slot, i) => {
+            if (!slot.lecture) return;
+            let cellTouched = false;
+            ['subject', 'faculty', 'venue'].forEach(field => {
+              if (slot.lecture[field] && slot.lecture[field].toLowerCase().includes(findVal.toLowerCase())) {
+                // Case-insensitive replace
+                const regex = new RegExp(findVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const newVal = slot.lecture[field].replace(regex, replaceVal);
+                if (newVal !== slot.lecture[field]) {
+                  slot.lecture[field] = newVal;
+                  count++;
+                  cellTouched = true;
+                }
+              }
+            });
+            if (cellTouched) {
+              const cellId = `cell\u2013${cls}\u2013${day}\u2013${i}`;
+              const cell = document.getElementById(cellId);
+              if (cell) {
+                const content = cell.querySelector('.lecture-content');
+                if (content) {
+                  // Show replaced text briefly highlighted in green, then fade
+                  const sub = slot.lecture.subject || '';
+                  const fac = slot.lecture.faculty || '';
+                  const ven = slot.lecture.venue || '';
+                  content.innerHTML = `${sub}<br>${fac}<br>${ven}`;
+                  highlightInElement(content, replaceVal, 'fr-replaced');
+                  replacedCells.add(cell);
+                }
+              }
+            }
+          });
+        }
+      }
+
+      if (count > 0) {
+        markDirty();
+        status.textContent = `✓ Replaced ${count} occurrence${count > 1 ? 's' : ''} — highlighted in green below`;
+        status.style.color = '#2c7a2c';
+
+        // Dim non-replaced cells briefly
+        document.querySelectorAll('.editable-cell').forEach(cell => {
+          if (!replacedCells.has(cell)) cell.classList.add('fr-dim');
+        });
+
+        // After 2.5 s, remove highlights and dim
+        setTimeout(() => {
+          clearFindHighlights();
+          document.querySelectorAll('.editable-cell').forEach(c => c.classList.remove('fr-dim'));
+          // Also clear the find input highlight state
+          document.getElementById('findInput').dispatchEvent(new Event('input'));
+        }, 2500);
+      } else {
+        status.textContent = 'No matches found';
+        status.style.color = '#c33';
+      }
+    });
+
+    // Clear button
+    document.getElementById('clearFindBtn').addEventListener('click', function () {
+      document.getElementById('findInput').value = '';
+      document.getElementById('replaceInput').value = '';
+      document.getElementById('replaceStatus').textContent = '';
+      clearFindHighlights();
+      document.querySelectorAll('.editable-cell').forEach(c => c.classList.remove('fr-dim'));
+    });
     document.getElementById('editDragDrop').addEventListener('change', () => {
       enableEditOptions();
       const hint = document.getElementById('dragHint');

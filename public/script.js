@@ -5,7 +5,11 @@ document.getElementById('addBreak').addEventListener('click', function () {
   div.classList.add('breakInput');
   div.innerHTML =
     '<label>Break Start: <input type="time" name="breakStart"></label>' +
-    '<label>Break End: <input type="time" name="breakEnd"></label>';
+    '<label>Break End: <input type="time" name="breakEnd"></label>' +
+    '<button type="button" class="break-remove-btn">✕ Remove</button>';
+  div.querySelector('.break-remove-btn').addEventListener('click', function () {
+    div.remove();
+  });
   container.appendChild(div);
 });
 
@@ -21,7 +25,11 @@ document.getElementById('addSaturdayBreak').addEventListener('click', function (
   div.classList.add('saturdayBreakInput');
   div.innerHTML =
     '<label>Saturday Break Start: <input type="time" name="saturdayBreakStart"></label>' +
-    '<label>Saturday Break End: <input type="time" name="saturdayBreakEnd"></label>';
+    '<label>Saturday Break End: <input type="time" name="saturdayBreakEnd"></label>' +
+    '<button type="button" class="break-remove-btn">✕ Remove</button>';
+  div.querySelector('.break-remove-btn').addEventListener('click', function () {
+    div.remove();
+  });
   container.appendChild(div);
 });
 
@@ -108,6 +116,247 @@ window.timetableSettings = {};
 let isSubmitted = false;
 // Global variable to store generated data for later use
 window.generatedData = null;
+// All practical subjects parsed from the class Excel (used to populate lab dropdowns)
+window.allPracticalSubjects = [];
+// Counter for default lab naming
+let labCounter = 0;
+
+// --- Populate allPracticalSubjects when class Excel is uploaded ---
+document.getElementById('classesExcel').addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file) return;
+  try {
+    const classes = await parseClassesExcel(file);
+    window.allPracticalSubjects = [...new Set(classes.flatMap(c => c.practicalSubjects))];
+    // Refresh dropdowns on all existing lab cards
+    document.querySelectorAll('.lab-card').forEach(card => {
+      const ms = card.querySelector('.lab-multiselect');
+      if (ms && ms._refresh) ms._refresh();
+    });
+  } catch (e) {
+    console.error('Error parsing class Excel for lab dropdowns:', e);
+  }
+});
+
+// --- Helper: collect all subjects selected by OTHER lab cards ---
+function getSubjectsClaimedByOthers(selfWrapper) {
+  const claimed = new Set();
+  document.querySelectorAll('.lab-card').forEach(card => {
+    const ms = card.querySelector('.lab-multiselect');
+    if (!ms || ms === selfWrapper) return;
+    if (ms._getSelected) ms._getSelected().forEach(s => claimed.add(s));
+  });
+  return claimed;
+}
+
+// --- Helper: after any selection change, refresh sibling dropdowns so their
+//     disabled state stays in sync (only re-renders if the panel is open) ---
+function refreshSiblingDropdowns(selfWrapper) {
+  document.querySelectorAll('.lab-card').forEach(card => {
+    const ms = card.querySelector('.lab-multiselect');
+    if (!ms || ms === selfWrapper) return;
+    if (ms._refresh) ms._refresh();
+  });
+}
+
+// --- Lab Card: Multiselect Dropdown Factory ---
+function createMultiSelectDropdown() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'lab-multiselect';
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'lab-multiselect-trigger';
+
+  const panel = document.createElement('div');
+  panel.className = 'lab-multiselect-panel';
+  panel.style.display = 'none';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = '🔍 Search subjects...';
+  searchInput.className = 'lab-multiselect-search';
+
+  const list = document.createElement('div');
+  list.className = 'lab-multiselect-list';
+
+  panel.appendChild(searchInput);
+  panel.appendChild(list);
+  wrapper.appendChild(trigger);
+  wrapper.appendChild(panel);
+
+  function getChecked() {
+    return [...list.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  }
+
+  function updateTrigger() {
+    const checked = getChecked();
+    trigger.textContent = checked.length === 0
+      ? 'Any Lab (no restriction) ▾'
+      : `${checked.length} subject${checked.length > 1 ? 's' : ''} assigned ▾`;
+  }
+
+  function renderList() {
+    const subjects = window.allPracticalSubjects || [];
+    const search = searchInput.value.toLowerCase();
+    const previously = getChecked();
+    // Subjects locked by other lab cards
+    const claimedElsewhere = getSubjectsClaimedByOthers(wrapper);
+
+    list.innerHTML = '';
+
+    if (subjects.length === 0) {
+      const hint = document.createElement('div');
+      hint.className = 'lab-multiselect-hint';
+      hint.textContent = 'Upload class Excel first to see subjects';
+      list.appendChild(hint);
+      return;
+    }
+
+    const filtered = subjects.filter(s => s.toLowerCase().includes(search));
+
+    if (filtered.length === 0) {
+      const hint = document.createElement('div');
+      hint.className = 'lab-multiselect-hint';
+      hint.textContent = 'No subjects match your search';
+      list.appendChild(hint);
+      return;
+    }
+
+    filtered.forEach(subject => {
+      const isTaken = claimedElsewhere.has(subject);
+
+      const label = document.createElement('label');
+      label.className = 'lab-multiselect-item' + (isTaken ? ' lab-multiselect-item--taken' : '');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = subject;
+      cb.checked = previously.includes(subject);
+      cb.disabled = isTaken;
+      cb.addEventListener('change', () => {
+        updateTrigger();
+        // Re-render this list so any newly freed/taken subjects update live
+        renderList();
+        // Also update all sibling dropdowns so they reflect the change
+        refreshSiblingDropdowns(wrapper);
+      });
+
+      const text = document.createTextNode('\u00a0' + subject);
+
+      // Small badge shown next to taken subjects
+      const badge = document.createElement('span');
+      badge.className = 'lab-taken-badge';
+      badge.textContent = 'assigned';
+      badge.style.display = isTaken ? 'inline' : 'none';
+
+      label.appendChild(cb);
+      label.appendChild(text);
+      label.appendChild(badge);
+      list.appendChild(label);
+    });
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = panel.style.display !== 'none';
+    // Close all other open panels
+    document.querySelectorAll('.lab-multiselect-panel').forEach(p => { p.style.display = 'none'; });
+    if (!isOpen) {
+      searchInput.value = '';
+      panel.style.display = 'block';
+      renderList();
+      searchInput.focus();
+    }
+  });
+
+  searchInput.addEventListener('input', renderList);
+
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  // Public API used by addLabCard, buildLabConfigs, and refreshSiblingDropdowns
+  wrapper._refresh = () => {
+    if (panel.style.display !== 'none') renderList();
+    updateTrigger();
+  };
+  wrapper._getSelected = getChecked;
+
+  updateTrigger();
+  return wrapper;
+}
+
+// --- Lab Card: Create and append a new lab card ---
+function addLabCard() {
+  labCounter++;
+
+  const card = document.createElement('div');
+  card.className = 'lab-card';
+
+  // Name row
+  const nameRow = document.createElement('div');
+  nameRow.className = 'lab-card-row';
+
+  const nameLabel = document.createElement('span');
+  nameLabel.className = 'lab-card-label';
+  nameLabel.textContent = 'Lab Name:';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = `Lab ${labCounter}`;
+  nameInput.className = 'lab-name-input';
+
+  nameRow.appendChild(nameLabel);
+  nameRow.appendChild(nameInput);
+
+  // Subject row
+  const subjectRow = document.createElement('div');
+  subjectRow.className = 'lab-card-row';
+
+  const subjectLabel = document.createElement('span');
+  subjectLabel.className = 'lab-card-label';
+  subjectLabel.textContent = 'Subjects:';
+
+  const multiselect = createMultiSelectDropdown();
+
+  subjectRow.appendChild(subjectLabel);
+  subjectRow.appendChild(multiselect);
+
+  // Remove button
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'lab-remove-btn';
+  removeBtn.textContent = '✕ Remove';
+  removeBtn.addEventListener('click', () => {
+    card.remove();
+    // Free up this lab's subjects in all remaining dropdowns
+    refreshSiblingDropdowns(null);
+  });
+
+  card.appendChild(nameRow);
+  card.appendChild(subjectRow);
+  card.appendChild(removeBtn);
+
+  document.getElementById('labsContainer').appendChild(card);
+}
+
+// --- Collect labConfigs from all lab cards ---
+function buildLabConfigs() {
+  const cards = [...document.querySelectorAll('.lab-card')];
+  return cards.map((card, index) => {
+    const nameInput = card.querySelector('.lab-name-input');
+    const labName = (nameInput.value || nameInput.placeholder || `Lab${index + 1}`).trim();
+    const ms = card.querySelector('.lab-multiselect');
+    const subjects = ms && ms._getSelected ? ms._getSelected() : [];
+    return { labName, subjects };
+  });
+}
+
+// --- Wire up Add Lab button ---
+document.getElementById('addLabBtn').addEventListener('click', addLabCard);
 
 // Refresh/close/navigate karne se pehle browser ka built-in confirmation dikhao,
 // taaki user accidentally generated timetable na khoye (refresh karte hi sab data ud jata hai).
@@ -164,7 +413,13 @@ document.getElementById('timetableForm').addEventListener('submit', async functi
   const maxFacultyLecturesPerDay = parseInt(document.querySelector('input[name="maxFacultyLecturesPerDay"]').value);
   const maxSubjectLecturesPerDay = parseInt(document.querySelector('input[name="maxSubjectLecturesPerDay"]').value);
   const numberOfRooms = parseInt(document.querySelector('input[name="numberOfRooms"]').value);
-  const numberOfLabs = parseInt(document.querySelector('input[name="numberOfLabs"]').value);
+
+  // Build lab config from the lab cards UI
+  const labConfigs = buildLabConfigs();
+  if (labConfigs.length === 0) {
+    alert("Please add at least one lab using the '+ Add Lab' button.");
+    return;
+  }
 
   // Collect weekday break times
   const breakTimes = [];
@@ -232,7 +487,7 @@ document.getElementById('timetableForm').addEventListener('submit', async functi
     maxFacultyLecturesPerDay,
     maxSubjectLecturesPerDay,
     numberOfRooms,
-    numberOfLabs,
+    labConfigs,
     saturdayEnabled
   };
 

@@ -105,6 +105,41 @@ function initializeAvailability(resources, days, totalSlots) {
     return availability;
 }
 
+// Build a subject→lab mapping from user-defined lab configs.
+// labConfigs: [{ labName: "Lab 1", subjects: ["OS Lab", "DBMS Lab"] }, ...]
+// allPracticalSubjects: flat array of all unique practical subject names
+// Rules:
+//   - Subjects explicitly listed under a lab → only that lab
+//   - Labs with empty subjects array → "Any Lab" pool for unassigned subjects
+//   - If no "Any Lab" labs exist → all labs share unassigned subjects round-robin
+function buildSubjectToLabMappingFromConfigs(labConfigs, allPracticalSubjects) {
+    const mapping = {};
+    const anyLabPool = [];
+
+    labConfigs.forEach(lab => {
+        lab.subjects.forEach(subject => {
+            mapping[normalizeSubject(subject)] = lab.labName;
+        });
+        if (lab.subjects.length === 0) {
+            anyLabPool.push(lab.labName);
+        }
+    });
+
+    // Prefer "Any Lab" labs for unassigned subjects; fall back to all labs
+    const pool = anyLabPool.length > 0 ? anyLabPool : labConfigs.map(l => l.labName);
+    let poolIndex = 0;
+
+    allPracticalSubjects.forEach(subject => {
+        const key = normalizeSubject(subject);
+        if (!mapping[key] && pool.length > 0) {
+            mapping[key] = pool[poolIndex % pool.length];
+            poolIndex++;
+        }
+    });
+
+    return mapping;
+}
+
 // Assign labs to practical subjects using a round-robin random approach.
 function assignLabsToSubjects(classes, labs) {
     let subjectToLabMapping = {};
@@ -412,7 +447,10 @@ function buildResourceTableData(resourceTimetable) {
 }
 
 // Utility: Derive Faculty and Resource timetables from the Class Timetable
-function deriveDerivedTimetables(classTimetable, faculties, numberOfRooms, numberOfLabs) {
+// labNamesInput can be:
+//   - an array of strings (new API): ["Lab 1", "Networking Lab", ...]
+//   - a number (legacy API): 3  → generates ["Lab1", "Lab2", "Lab3"]
+function deriveDerivedTimetables(classTimetable, faculties, numberOfRooms, labNamesInput) {
     const facultyTimetable = {};
     // Initialize faculty entries
     faculties.forEach(faculty => {
@@ -421,7 +459,9 @@ function deriveDerivedTimetables(classTimetable, faculties, numberOfRooms, numbe
 
     const resourceTimetable = {};
     const rooms = Array.from({ length: numberOfRooms }, (_, i) => `Classroom${i + 1}`);
-    const labs = Array.from({ length: numberOfLabs }, (_, i) => `Lab${i + 1}`);
+    const labs = Array.isArray(labNamesInput)
+        ? labNamesInput
+        : Array.from({ length: labNamesInput || 0 }, (_, i) => `Lab${i + 1}`);
 
     // Initialize resource entries
     rooms.forEach(room => {
@@ -466,6 +506,7 @@ module.exports = {
     createBlankTimetables,
     initializeAvailability,
     assignLabsToSubjects,
+    buildSubjectToLabMappingFromConfigs,
     generateTimetable,
     buildTableData,
     buildFacultyTableData,

@@ -15,6 +15,7 @@ const {
   generateSlotTimings,
   createBlankTimetables,
   initializeAvailability,
+  buildSubjectToLabMappingFromConfigs,
   buildTableData,
   buildFacultyTableData,
   buildResourceTableData,
@@ -102,12 +103,18 @@ app.post('/generateTimetable', (req, res) => {
     maxFacultyLecturesPerDay,
     maxSubjectLecturesPerDay,
     numberOfRooms,
-    numberOfLabs,
+    numberOfLabs,       // legacy fallback (kept for backward compat)
+    labConfigs,         // new: [{ labName, subjects[] }]
     saturdayEnabled,
     saturdayStartTime,
     saturdayEndTime,
     saturdayBreakTimes
   } = req.body;
+
+  // Derive lab names: prefer labConfigs (new), fall back to numberOfLabs (legacy)
+  const labNames = labConfigs && labConfigs.length > 0
+    ? labConfigs.map(l => l.labName)
+    : Array.from({ length: numberOfLabs || 0 }, (_, i) => `Lab${i + 1}`);
 
   let days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const slotTimings = generateSlotTimings(startTime, endTime, lectureDuration, breakTimes);
@@ -126,9 +133,15 @@ app.post('/generateTimetable', (req, res) => {
   );
 
   const rooms = Array.from({ length: numberOfRooms }, (_, i) => `Classroom${i + 1}`);
-  const labs = Array.from({ length: numberOfLabs }, (_, i) => `Lab${i + 1}`);
   const roomAvailability = initializeAvailability(rooms, days, totalSlots);
-  const labAvailability = initializeAvailability(labs, days, totalSlots);
+  const labAvailability = initializeAvailability(labNames, days, totalSlots);
+
+  // Build subject→lab mapping from labConfigs (or fall back to random assignment)
+  let subjectToLabMapping = null;
+  if (labConfigs && labConfigs.length > 0) {
+    const allPracticalSubjects = [...new Set(classes.flatMap(c => c.practicalSubjects))];
+    subjectToLabMapping = buildSubjectToLabMappingFromConfigs(labConfigs, allPracticalSubjects);
+  }
 
   const result = generateTimetable(
     timetable,
@@ -141,10 +154,11 @@ app.post('/generateTimetable', (req, res) => {
     days,
     lectureDuration,
     maxFacultyLecturesPerDay,
-    maxSubjectLecturesPerDay
+    maxSubjectLecturesPerDay,
+    subjectToLabMapping
   );
   const generatedTimetable = result.timetable;
-  const subjectToLabMapping = result.subjectToLabMapping;
+  const finalSubjectToLabMapping = result.subjectToLabMapping;
 
   let saturdayNeeded = false;
   if (saturdayEnabled) {
@@ -194,18 +208,17 @@ app.post('/generateTimetable', (req, res) => {
       lectureDuration,
       maxFacultyLecturesPerDay,
       maxSubjectLecturesPerDay,
-      subjectToLabMapping,
-      subjectToLabMapping
+      finalSubjectToLabMapping
     );
     days.push('Saturday');
   }
 
-  // Build additional timetables: facultyTimetable and resourceTimetable using the helper
+  // Build faculty and resource timetables using actual lab names
   const { facultyTimetable, resourceTimetable } = deriveDerivedTimetables(
     generatedTimetable,
     faculties,
     numberOfRooms,
-    numberOfLabs
+    labNames
   );
 
   const output = {
@@ -219,7 +232,9 @@ app.post('/generateTimetable', (req, res) => {
     maxFacultyLecturesPerDay,
     maxSubjectLecturesPerDay,
     numberOfRooms,
-    numberOfLabs,
+    numberOfLabs: labNames.length,   // keep for legacy compat
+    labConfigs: labConfigs || null,
+    labNames,
     saturdayEnabled,
     saturdayStartTime,
     saturdayEndTime,
@@ -544,17 +559,18 @@ app.post('/updateTimetable', (req, res) => {
   const settings = req.body;
 
   try {
-    // ✅ Derive updated faculty and resource timetables from the edited class timetable
+    // Support both labNames array (new) and numberOfLabs number (legacy)
+    const labNamesOrCount = settings.labNames || settings.numberOfLabs;
+
     const { facultyTimetable, resourceTimetable } = deriveDerivedTimetables(
       settings.timetable,
       settings.faculties,
       settings.numberOfRooms,
-      settings.numberOfLabs
+      labNamesOrCount
     );
     settings.facultyTimetable = facultyTimetable;
     settings.resourceTimetable = resourceTimetable;
 
-    // ✅ Store the manually edited timetable with updated derived tables
     req.session.generatedTimetable = settings;
     
     res.json(settings);

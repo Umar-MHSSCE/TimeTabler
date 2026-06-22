@@ -761,3 +761,85 @@ table, th, td {
     touch-action: manipulation !important;
   }
 }
+/* ─── 14. FIND & REPLACE PANEL — MOBILE ─────────────────────
+   Screenshot mein: inputs + buttons sab horizontal wrap ho ke
+   bichre hue the. Ab clean 2-column grid layout on mobile.
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #findReplacePanel {
+    display: none;            /* JS controls show/hide via flex */
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    margin-top: 10px !important;
+    border-radius: 10px !important;
+  }
+
+  /* When JS sets display:flex, keep column layout */
+  #findReplacePanel[style*="flex"] {
+    flex-direction: column !important;
+  }
+
+  /* Label stays full width on its own line */
+  #findReplacePanel > span:first-child {
+    font-size: 0.9rem !important;
+    margin-bottom: 2px;
+  }
+
+  /* Both text inputs — full width, big tap target */
+  #findInput,
+  #replaceInput {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important;   /* prevent iOS zoom-in */
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    min-width: unset !important;
+    flex: unset !important;
+  }
+
+  /* Replace All + Clear side by side */
+  #replaceAllBtn,
+  #clearFindBtn {
+    flex: 1 !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Wrap the two buttons in a row — use a flex row container trick
+     by making them siblings in a display:contents wrapper isn't possible
+     in pure CSS, so we target them together as adjacent siblings */
+  #replaceAllBtn {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #clearFindBtn {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Status message — full width below */
+  #replaceStatus {
+    width: 100% !important;
+    font-size: 13px !important;
+    margin-top: 0 !important;
+    display: block !important;
+  }
+}
+
+/* Button row inside find-replace panel — full width on mobile */
+@media (max-width: 768px) {
+  #findReplacePanel > div {
+    width: 100% !important;
+  }
+
+  #replaceAllBtn,
+  #clearFindBtn {
+    padding: 11px 10px !important;
+    font-size: 15px !important;
+    border-radius: 8px !important;
+  }
+}
