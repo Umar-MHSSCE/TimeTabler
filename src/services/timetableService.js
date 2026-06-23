@@ -438,7 +438,7 @@ function buildResourceTableData(resourceTimetable) {
         });
 
         tables.push({
-            title: `Resource: ${resourceName}`,
+            title: resourceName,   // raw name (e.g. "Classroom1", "Lab 1") – caller adds prefix
             header: ['Time', ...availableDays],
             rows: rows
         });

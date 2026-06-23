@@ -736,14 +736,19 @@ function renderFacultyTimetable(data) {
 
 function renderResourceTimetable(data) {
   const resourceData = data.resourceTimetable;
-  let html = `<h1 style="text-align: center">Resource Timetables</h1>`;
+  let html = `<h1 style="text-align: center">Classroom &amp; Lab Timetables</h1>`;
 
   // Define the fixed day order.
   const fixedDayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+  // Collect known lab names from data so we can label them differently from classrooms.
+  const labNames = new Set(data.labNames || []);
+
   // Loop through each resource.
   for (const resource in resourceData) {
-    html += `<h2>Resource: ${resource}</h2>`;
+    const isLab = labNames.has(resource);
+    const resourceLabel = isLab ? `Lab: ${resource}` : `Classroom: ${resource}`;
+    html += `<h2>${resourceLabel}</h2>`;
 
     // Get the days available for this resource and sort them according to fixedDayOrder.
     const availableDays = fixedDayOrder.filter(day => resourceData[resource][day]);

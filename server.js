@@ -47,6 +47,9 @@ app.get('/workspace', (req, res) => {
 // Serve static files from the current directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve sample Excel files for user reference
+app.use('/samples', express.static(path.join(__dirname, 'public', 'samples')));
+
 
 
 // Logic moved to src/services/timetableService.js
@@ -273,7 +276,7 @@ app.post('/download/pdf', (req, res) => {
       filenameStr = 'faculty_timetable.pdf';
     } else if (type === 'resource') {
       tables = buildResourceTableData(timetableData.resourceTimetable);
-      titleStr = 'Resource Timetable';
+      titleStr = 'Classroom & Lab Timetable';
       filenameStr = 'resource_timetable.pdf';
     } else {
       tables = buildTableData(timetableData.timetable);
@@ -291,9 +294,21 @@ app.post('/download/pdf', (req, res) => {
 
     let isFirst = true;
 
+    // Build set of lab names for correct labelling in resource PDF
+    const labNamesSet = new Set(timetableData.labNames || []);
+
     tables.forEach(table => {
       // Logic to handle both 'className' (from class TT) and 'title' (from faculty/resource TT)
-      const tableTitle = table.className ? `Class: ${table.className}` : table.title;
+      let tableTitle;
+      if (table.className) {
+        tableTitle = `Class: ${table.className}`;
+      } else if (table.title && labNamesSet.has(table.title)) {
+        tableTitle = `Lab: ${table.title}`;
+      } else if (table.title) {
+        tableTitle = `Classroom: ${table.title}`;
+      } else {
+        tableTitle = '';
+      }
 
       if (!isFirst) {
         doc.addPage();
