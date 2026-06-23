@@ -468,18 +468,47 @@
 
       for (const cls in data.timetable) {
         const days = Object.keys(data.timetable[cls]);
-        const slotCount = data.timetable[cls][days[0]].length;
+
+        // FIX: Use the MAXIMUM slot count across ALL days (not just days[0]).
+        // Friday/Saturday may have different slot counts (e.g. Saturday ends earlier),
+        // and previously those extra rows were silently skipped → drag-drop on those
+        // cells was broken because the cells were never rendered.
+        let maxSlotCount = 0;
+        days.forEach(day => {
+          const len = (data.timetable[cls][day] || []).length;
+          if (len > maxSlotCount) maxSlotCount = len;
+        });
+
+        // Pick a reference day for reading time labels (the one with most slots).
+        const refDay = days.reduce((best, d) =>
+          (data.timetable[cls][d] || []).length >= (data.timetable[cls][best] || []).length ? d : best
+        , days[0]);
 
         let html = `<h2 style="text-align:center;">${cls}</h2>
       <table border="1" style="width:100%; margin-bottom:20px;">
         <thead><tr><th>Time</th>${days.map(day => `<th>${day}</th>`).join('')}</tr></thead>
         <tbody>`;
 
-        for (let i = 0; i < slotCount; i++) {
-          html += `<tr><td>${data.timetable[cls][days[0]][i].time.start} - ${data.timetable[cls][days[0]][i].time.end}</td>`;
+        for (let i = 0; i < maxSlotCount; i++) {
+          // Time label from reference day; fall back gracefully if slot missing
+          const refSlot = data.timetable[cls][refDay][i];
+          const timeLabel = refSlot
+            ? `${refSlot.time.start} - ${refSlot.time.end}`
+            : '';
+          html += `<tr><td>${timeLabel}</td>`;
+
           for (const day of days) {
-            const lecture = data.timetable[cls][day][i].lecture || { subject: '', faculty: '', venue: '' };
-            const cellId = `cell–${cls}–${day}–${i}`;
+            const daySlots = data.timetable[cls][day] || [];
+            // FIX: Guard for days with fewer slots (e.g. Saturday ends earlier).
+            // Render an empty non-draggable cell so the table stays consistent.
+            if (i >= daySlots.length) {
+              html += `<td class="editable-cell-empty" style="background:#f5f5f5;"></td>`;
+              continue;
+            }
+            const lecture = daySlots[i].lecture || { subject: '', faculty: '', venue: '' };
+            // FIX: Use a plain ASCII separator (|) in cellId so parseCellId never
+            // gets confused by em-dashes inside class/day names.
+            const cellId = makeCellId(cls, day, i);
             html += `<td id="${cellId}" class="editable-cell" draggable="false">
                   <div class="lecture-content" contenteditable="false">${lecture.subject}<br>${lecture.faculty}<br>${lecture.venue}</div>
                   <span class="close-btn" style="display:none;">✕</span>
@@ -502,9 +531,20 @@
       saveOriginalSnapshot();
     }
 
+    // ── Cell ID helpers ──────────────────────────────────────────
+    // Use U+2063 (INVISIBLE SEPARATOR) as delimiter so it never clashes
+    // with class names, day names, or any user-typed content.
+    const CELL_SEP = '\u2063';
+
+    function makeCellId(cls, day, index) {
+      return `cell${CELL_SEP}${cls}${CELL_SEP}${day}${CELL_SEP}${index}`;
+    }
+
     function parseCellId(id) {
-      const [_, cls, day, index] = id.split('–');
-      return { className: cls, day, index: parseInt(index, 10) };
+      // Split on U+2063 (INVISIBLE SEPARATOR) — same as makeCellId uses.
+      const parts = id.split('\u2063');
+      // parts[0] = 'cell', parts[1] = className, parts[2] = day, parts[3] = index
+      return { className: parts[1], day: parts[2], index: parseInt(parts[3], 10) };
     }
 
     function enableEditOptions() {
@@ -556,10 +596,13 @@
           newCloseBtn.onclick = (e) => {
             e.stopPropagation();
             const { className, day, index } = parseCellId(cell.id);
+            // Guard: slot must exist
+            const daySlots = editableData.timetable[className]?.[day];
+            if (!daySlots || index >= daySlots.length) return;
             // Clear in data model
-            editableData.timetable[className][day][index].lecture = {
+            daySlots[index].lecture = {
               subject: '', faculty: '', venue: '',
-              time: editableData.timetable[className][day][index].time
+              time: daySlots[index].time
             };
             // Update only the cell's content — no full re-render
             const content = cell.querySelector('.lecture-content');
@@ -713,7 +756,7 @@
               }
             });
             if (cellTouched) {
-              const cellId = `cell\u2013${cls}\u2013${day}\u2013${i}`;
+              const cellId = makeCellId(cls, day, i);
               const cell = document.getElementById(cellId);
               if (cell) {
                 const content = cell.querySelector('.lecture-content');
@@ -777,13 +820,18 @@
 
       const cell = e.currentTarget.closest('.editable-cell');
       const { className, day, index } = parseCellId(cell.id);
+
+      // Guard: slot must actually exist in data model
+      const daySlots = editableData.timetable[className]?.[day];
+      if (!daySlots || index >= daySlots.length) return;
+
       const lines = e.currentTarget.innerText.trim().split('\n').map(line => line.trim());
 
-      editableData.timetable[className][day][index].lecture = {
+      daySlots[index].lecture = {
         subject: lines[0] || '',
         faculty: lines[1] || '',
         venue: lines[2] || '',
-        time: editableData.timetable[className][day][index].time
+        time: daySlots[index].time
       };
       markDirty();
     }
@@ -809,19 +857,40 @@
       const src = parseCellId(srcId);
       const tgt = parseCellId(tgtId);
 
-      const srcSlot = editableData.timetable[src.className][src.day][src.index];
-      const tgtSlot = editableData.timetable[tgt.className][tgt.day][tgt.index];
+      // Guard: if parseCellId returned bad data (e.g. non-editable cell), bail out.
+      if (!src.className || !src.day || isNaN(src.index)) return;
+      if (!tgt.className || !tgt.day || isNaN(tgt.index)) return;
 
-      const srcCopy = structuredClone(srcSlot.lecture);
-      const tgtCopy = structuredClone(tgtSlot.lecture);
+      const srcDaySlots = editableData.timetable[src.className]?.[src.day];
+      const tgtDaySlots = editableData.timetable[tgt.className]?.[tgt.day];
+      if (!srcDaySlots || !tgtDaySlots) return;
+      if (src.index >= srcDaySlots.length || tgt.index >= tgtDaySlots.length) return;
 
-      editableData.timetable[src.className][src.day][src.index].lecture = tgtCopy;
-      editableData.timetable[tgt.className][tgt.day][tgt.index].lecture = srcCopy;
+      const srcSlot = srcDaySlots[src.index];
+      const tgtSlot = tgtDaySlots[tgt.index];
 
-      const srcEl = document.getElementById(srcId).querySelector('.lecture-content');
-      const tgtEl = document.getElementById(tgtId).querySelector('.lecture-content');
-      srcEl.innerHTML = `${tgtCopy.subject}<br>${tgtCopy.faculty}<br>${tgtCopy.venue}`;
-      tgtEl.innerHTML = `${srcCopy.subject}<br>${srcCopy.faculty}<br>${srcCopy.venue}`;
+      // FIX: Deep-clone lectures; treat null lecture as empty object so DOM update
+      // never calls .subject on null (crash that caused the glitch on empty cells).
+      const srcLecture = structuredClone(srcSlot.lecture);   // may be null
+      const tgtLecture = structuredClone(tgtSlot.lecture);   // may be null
+
+      // Swap in data model (null is valid — means "empty slot")
+      srcDaySlots[src.index].lecture = tgtLecture;
+      tgtDaySlots[tgt.index].lecture = srcLecture;
+
+      // Helper: turn a lecture (possibly null) into safe HTML lines
+      function lectureHTML(lec) {
+        if (!lec) return '<br><br>';
+        const s = lec.subject || '';
+        const f = lec.faculty  || '';
+        const v = lec.venue    || '';
+        return `${s}<br>${f}<br>${v}`;
+      }
+
+      const srcEl = document.getElementById(srcId)?.querySelector('.lecture-content');
+      const tgtEl = document.getElementById(tgtId)?.querySelector('.lecture-content');
+      if (srcEl) srcEl.innerHTML = lectureHTML(tgtLecture);
+      if (tgtEl) tgtEl.innerHTML = lectureHTML(srcLecture);
 
       // Flash both cells green briefly so user clearly sees the swap
       [srcId, tgtId].forEach(id => {
